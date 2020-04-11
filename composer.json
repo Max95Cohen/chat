@@ -1,0 +1,22 @@
+{
+    "name": "sad-coder/chat",
+    "authors": [
+        {
+            "name": "sad-coder",
+            "email": "gebsss29@gmail.com"
+        }
+    ],
+    "require": {
+
+    },
+    "autoload": {
+        "psr-4": {
+            "Controllers\\": "controllers"
+        }
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.0",
+        "phpunit/phpunit": "^9.0",
+        "swoole/ide-helper": "@dev"
+    }
+}

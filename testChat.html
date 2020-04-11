@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+
+</body>
+</html>
+
+
+<script>
+
+    let socket = new WebSocket('ws://127.0.0.1:9502/');
+
+    let chatList = false;
+
+    //908102
+    socket.addEventListener('open', function () {
+
+        socket.send(JSON.stringify({
+            data: {
+                command: 'CreateChat',
+                userID: 104708,
+                userToken: "testUserToken",
+            }
+
+        }));
+
+
+    });
+
+
+
+
+
+</script>
