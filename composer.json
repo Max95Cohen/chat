@@ -7,7 +7,8 @@
         }
     ],
     "require": {
-
+        "ext-redis": "*",
+        "illuminate/database": "^7.12"
     },
     "autoload": {
         "psr-4": {

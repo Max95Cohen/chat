@@ -10,12 +10,20 @@ class RouterController
             'action' => 'ChatController@store',
             'params' => true,
         ],
+        'init' => [
+            'action' => 'AuthController@init',
+            'params' => true,
+        ],
     ];
 
 
-    public static function executeRoute($route,string $params=null)
+    public static function executeRoute($route, array $params=null,$fd = null)
     {
         $route = self::$routes[$route] ?? null;
+
+        if ($fd) {
+            $params['connection_id'] = $fd;
+        }
 
         if ($route){
             $controllerAndMethod = explode('@', $route['action']);
@@ -26,6 +34,7 @@ class RouterController
 
         return '404';
     }
+
 
 
 }

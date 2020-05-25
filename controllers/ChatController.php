@@ -34,7 +34,6 @@ class ChatController
                 102, 130, 290
             ],
             'type' => self::GROUP,
-            'main_image' => 'https://i.ytimg.com/vi/BwoorYlAx7g/hqdefault.jpg?sqp=-oaymwEXCPYBEIoBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDvpWz5NYvJCwQ2kCahCmT8lfXWew'
         ]);
         $r = new Redis();
         $r->connect('127.0.0.1', 6379);

@@ -18,19 +18,33 @@
     let chatList = false;
 
     //908102
-    socket.addEventListener('open', function () {
+    socket.addEventListener('open', function (event) {
+
+        // socket.send(JSON.stringify({
+        //     data: {
+        //         command: 'CreateChat',
+        //         userID: 104708,
+        //         userToken: "testUserToken",
+        //     }
+        //
+        // }));
 
         socket.send(JSON.stringify({
             data: {
-                command: 'CreateChat',
+                command: 'init',
                 userID: 104708,
                 userToken: "testUserToken",
             }
 
         }));
+        console.log(event);
 
 
     });
+
+    socket.addEventListener('message',function (event) {
+        console.log(event.data);
+    })
 
 
 
