@@ -21,23 +21,51 @@
     socket.addEventListener('open', function (event) {
 
         // socket.send(JSON.stringify({
+        //     cmd: 'init',
         //     data: {
-        //         command: 'CreateChat',
-        //         userID: 104708,
-        //         userToken: "testUserToken",
+        //         user_id: 1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+
+
+        // проверяет контакты пользователя
+        // check user phone exists
+        // socket.send(JSON.stringify({
+        //     data: {
+        //         command: 'user:check',
+        //         userID: 1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         phone:'7909961990',
+        //     }
+        //
+        // }));
+
+        // создает чат
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:create',
+        //     data: {
+        //         user_id: 1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         user_ids:'40,39',
+        //         chat_name:"тестовое имя чата",
+        //         type:0,
         //     }
         //
         // }));
 
         socket.send(JSON.stringify({
+            cmd: 'message:create',
             data: {
-                command: 'init',
-                userID: 104708,
-                userToken: "testUserToken",
+                user_id: 1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+                chat_id:6,
+                text:'тестовое сообщение'
             }
 
         }));
-        console.log(event);
+
 
 
     });

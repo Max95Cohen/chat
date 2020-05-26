@@ -12,7 +12,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Controllers\\": "controllers"
+            "Controllers\\": "controllers",
+            "Helpers\\": "helpers"
         }
     },
     "require-dev": {

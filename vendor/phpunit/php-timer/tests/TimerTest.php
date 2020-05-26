@@ -18,42 +18,14 @@ final class TimerTest extends TestCase
 {
     public function testCanBeStartedAndStopped(): void
     {
+        Timer::start();
+
         $this->assertIsFloat(Timer::stop());
     }
 
     public function testCanFormatTimeSinceStartOfRequest(): void
     {
-        $this->assertStringMatchesFormat('%f %s', Timer::timeSinceStartOfRequest());
-    }
-
-    /**
-     * @backupGlobals enabled
-     */
-    public function testCanFormatSinceStartOfRequestWhenRequestTimeIsNotAvailableAsFloat(): void
-    {
-        if (isset($_SERVER['REQUEST_TIME_FLOAT'])) {
-            unset($_SERVER['REQUEST_TIME_FLOAT']);
-        }
-
-        $this->assertStringMatchesFormat('%f %s', Timer::timeSinceStartOfRequest());
-    }
-
-    /**
-     * @backupGlobals enabled
-     */
-    public function testCannotFormatTimeSinceStartOfRequestWhenRequestTimeIsNotAvailable(): void
-    {
-        if (isset($_SERVER['REQUEST_TIME_FLOAT'])) {
-            unset($_SERVER['REQUEST_TIME_FLOAT']);
-        }
-
-        if (isset($_SERVER['REQUEST_TIME'])) {
-            unset($_SERVER['REQUEST_TIME']);
-        }
-
-        $this->expectException(RuntimeException::class);
-
-        Timer::timeSinceStartOfRequest();
+        $this->assertStringMatchesFormat('%d:%d%s', Timer::timeSinceStartOfRequest());
     }
 
     public function testCanFormatResourceUsage(): void
@@ -62,55 +34,106 @@ final class TimerTest extends TestCase
     }
 
     /**
-     * @dataProvider secondsProvider
+     * @dataProvider secondsToTimeStringProvider
+     * @testdox Can format $seconds as '$string'
      */
     public function testCanFormatSecondsAsString(string $string, float $seconds): void
     {
         $this->assertEquals($string, Timer::secondsToTimeString($seconds));
     }
 
-    public function secondsProvider(): array
+    public function secondsToTimeStringProvider(): array
     {
         return [
-            ['0 ms', 0],
-            ['1 ms', .001],
-            ['10 ms', .01],
-            ['100 ms', .1],
-            ['999 ms', .999],
+            ['0 milliseconds', 0],
+            ['1 millisecond', .001],
+            ['10 milliseconds', .01],
+            ['100 milliseconds', .1],
+            ['999 milliseconds', .999],
             ['1 second', .9999],
             ['1 second', 1],
             ['2 seconds', 2],
-            ['59.9 seconds', 59.9],
-            ['59.99 seconds', 59.99],
-            ['59.99 seconds', 59.999],
+            ['59 seconds, 900 milliseconds', 59.9],
+            ['59 seconds, 990 milliseconds', 59.99],
+            ['59 seconds, 999 milliseconds', 59.999],
             ['1 minute', 59.9999],
-            ['59 seconds', 59.001],
-            ['59.01 seconds', 59.01],
+            ['59 seconds, 1 millisecond', 59.001],
+            ['59 seconds, 10 milliseconds', 59.01],
             ['1 minute', 60],
-            ['1.01 minutes', 61],
+            ['1 minute, 1 second', 61],
             ['2 minutes', 120],
-            ['2.01 minutes', 121],
-            ['59.99 minutes', 3599.9],
-            ['59.99 minutes', 3599.99],
-            ['59.99 minutes', 3599.999],
+            ['2 minutes, 1 second', 121],
+            ['59 minutes, 59 seconds, 900 milliseconds', 3599.9],
+            ['59 minutes, 59 seconds, 990 milliseconds', 3599.99],
+            ['59 minutes, 59 seconds, 999 milliseconds', 3599.999],
             ['1 hour', 3599.9999],
-            ['59.98 minutes', 3599.001],
-            ['59.98 minutes', 3599.01],
+            ['59 minutes, 59 seconds, 1 millisecond', 3599.001],
+            ['59 minutes, 59 seconds, 10 milliseconds', 3599.01],
             ['1 hour', 3600],
-            ['1 hour', 3601],
-            ['1 hour', 3601.9],
-            ['1 hour', 3601.99],
-            ['1 hour', 3601.999],
-            ['1 hour', 3601.9999],
-            ['1.01 hours', 3659.9999],
-            ['1.01 hours', 3659.001],
-            ['1.01 hours', 3659.01],
+            ['1 hour, 1 second', 3601],
+            ['1 hour, 1 second, 900 milliseconds', 3601.9],
+            ['1 hour, 1 second, 990 milliseconds', 3601.99],
+            ['1 hour, 1 second, 999 milliseconds', 3601.999],
+            ['1 hour, 2 seconds', 3601.9999],
+            ['1 hour, 1 minute', 3659.9999],
+            ['1 hour, 59 seconds, 1 millisecond', 3659.001],
+            ['1 hour, 59 seconds, 10 milliseconds', 3659.01],
             ['2 hours', 7199.9999],
         ];
     }
 
     /**
+     * @dataProvider secondsToTimeShortStringProvider
+     * @testdox Can format $seconds as '$string'
+     */
+    public function testCanFormatSecondsAsShortString(string $string, float $seconds): void
+    {
+        $this->assertEquals($string, Timer::secondsToShortTimeString($seconds));
+    }
+
+    public function secondsToTimeShortStringProvider(): array
+    {
+        return [
+            ['00:00', 0],
+            ['00:00.001', .001],
+            ['00:00.010', .01],
+            ['00:00.100', .1],
+            ['00:00.999', .999],
+            ['00:01', .9999],
+            ['00:01', 1],
+            ['00:02', 2],
+            ['00:59.900', 59.9],
+            ['00:59.990', 59.99],
+            ['00:59.999', 59.999],
+            ['01:00', 59.9999],
+            ['00:59.001', 59.001],
+            ['00:59.010', 59.01],
+            ['01:00', 60],
+            ['01:01', 61],
+            ['02:00', 120],
+            ['02:01', 121],
+            ['59:59.900', 3599.9],
+            ['59:59.990', 3599.99],
+            ['59:59.999', 3599.999],
+            ['01:00:00', 3599.9999],
+            ['59:59.001', 3599.001],
+            ['59:59.010', 3599.01],
+            ['01:00:00', 3600],
+            ['01:00:01', 3601],
+            ['01:00:01.900', 3601.9],
+            ['01:00:01.990', 3601.99],
+            ['01:00:01.999', 3601.999],
+            ['01:00:02', 3601.9999],
+            ['01:01:00', 3659.9999],
+            ['01:00:59.001', 3659.001],
+            ['01:00:59.010', 3659.01],
+            ['02:00:00', 7199.9999],
+        ];
+    }
+
+    /**
      * @dataProvider bytesProvider
+     * @testdox Can format $bytes as '$string'
      */
     public function testCanFormatBytesAsString(string $string, float $bytes): void
     {
@@ -130,5 +153,33 @@ final class TimerTest extends TestCase
             ['3.00 GB', 3 * 1073741824],
             ['3.50 GB', 3.5 * 1073741824],
         ];
+    }
+
+    /**
+     * @backupGlobals enabled
+     * @testdox Cannot access time since start of request when $_SERVER['REQUEST_TIME_FLOAT'] is not set
+     */
+    public function testCannotAccessTimeSinceStartOfRequestWhenServerRequestTimeFloatIsNotSet(): void
+    {
+        unset($_SERVER['REQUEST_TIME_FLOAT']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot determine time at which the request started because $_SERVER[\'REQUEST_TIME_FLOAT\'] is not available');
+
+        Timer::timeSinceStartOfRequest();
+    }
+
+    /**
+     * @backupGlobals enabled
+     * @testdox Cannot access time since start of request when $_SERVER['REQUEST_TIME_FLOAT'] is not of type float
+     */
+    public function testCannotAccessTimeSinceStartOfRequestWhenServerRequestTimeFloatIsNotFloat(): void
+    {
+        $_SERVER['REQUEST_TIME_FLOAT'] = 'string';
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot determine time at which the request started because $_SERVER[\'REQUEST_TIME_FLOAT\'] is not of type float');
+
+        Timer::timeSinceStartOfRequest();
     }
 }

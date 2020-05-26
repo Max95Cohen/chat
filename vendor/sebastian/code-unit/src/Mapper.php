@@ -77,7 +77,9 @@ final class Mapper
                     return $this->publicAndProtectedMethodsOfClass($firstPart);
                 }
 
-                return CodeUnitCollection::fromList(CodeUnit::forClassMethod($firstPart, $secondPart));
+                if (\method_exists($firstPart, $secondPart)) {
+                    return CodeUnitCollection::fromList(CodeUnit::forClassMethod($firstPart, $secondPart));
+                }
             }
 
             if (\interface_exists($firstPart)) {
@@ -114,7 +116,7 @@ final class Mapper
                 $unit = \str_replace('<extended>', '', $unit);
 
                 if (\class_exists($unit)) {
-                    return $this->classAndParentClasses($unit);
+                    return $this->classAndParentClassesAndTraits($unit);
                 }
             }
         }
@@ -208,20 +210,32 @@ final class Mapper
      *
      * @throws ReflectionException
      */
-    private function classAndParentClasses(string $className): CodeUnitCollection
+    private function classAndParentClassesAndTraits(string $className): CodeUnitCollection
     {
         $units = [CodeUnit::forClass($className)];
 
         $reflector = $this->reflectorForClass($className);
 
         foreach ($this->reflectorForClass($className)->getTraits() as $trait) {
+            if ($trait->isInternal()) {
+                continue;
+            }
+
             $units[] = CodeUnit::forTrait($trait->getName());
         }
 
         while ($reflector = $reflector->getParentClass()) {
+            if ($reflector->isInternal()) {
+                continue;
+            }
+
             $units[] = CodeUnit::forClass($reflector->getName());
 
             foreach ($reflector->getTraits() as $trait) {
+                if ($trait->isInternal()) {
+                    continue;
+                }
+
                 $units[] = CodeUnit::forTrait($trait->getName());
             }
         }

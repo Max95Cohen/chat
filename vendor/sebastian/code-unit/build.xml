@@ -13,7 +13,6 @@
             <arg value="--no-interaction"/>
             <arg value="--no-progress"/>
             <arg value="--no-ansi"/>
-            <arg value="--no-suggest"/>
         </exec>
     </target>
 
@@ -25,6 +24,7 @@
 
         <exec executable="${basedir}/tools/composer" taskname="composer">
             <arg value="self-update"/>
+            <arg value="--1"/>
         </exec>
     </target>
 </project>

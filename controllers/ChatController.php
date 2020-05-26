@@ -2,6 +2,8 @@
 
 namespace Controllers;
 
+use Helpers\ChatHelper;
+use Illuminate\Database\Capsule\Manager as DB;
 use Redis;
 
 class ChatController
@@ -15,13 +17,12 @@ class ChatController
     }
 
 
-    const PRIVATE = 1;
-    const ME_TO_ME = 2;
-    const GROUP = 3;
-    const BUSINESS = 4;
+    const PRIVATE = 0;
+    const GROUP = 1;
+    const CHANNEL = 2;
 
-    const ROLE_OWNER = 1;
-    const ROLE_MEMBER = 2;
+    const OWNER = 0;
+    const SUBSCRIBER = 1;
 
 
     public function store(string $data)
@@ -148,6 +149,47 @@ class ChatController
 
         }
         return json_encode($messagesData);
+    }
+
+
+    public function create(array $data)
+    {
+        $userIds = explode(',', $data['user_ids']);
+
+        array_push($userIds, $data['user_id']);
+        $redis = new Redis();
+        $redis->connect('127.0.0.1',6379);
+
+
+
+        $chatId = DB::table('chats')->insertGetId([
+            'owner_id' => $data['user_id'],
+            'name' => $data['chat_name'],
+            'type' => $data['type'],
+            'members_count' => count($userIds),
+        ]);
+        $membersData = [];
+
+        switch ($data['type']) {
+            case self::PRIVATE :
+                foreach ($userIds as $userId) {
+                    $role = $userId == $data['user_id'] ? self::OWNER : self::SUBSCRIBER;
+                    $membersData[] = [
+                        'user_id' => $userId,
+                        'chat_id' => $chatId,
+                        'role' => $role,
+                    ];
+                    $redis->zAdd("chat:members:{$chatId}",['NX'],$role,$userId);
+                }
+                DB::table('chat_members')->insert($membersData);
+        }
+
+        return [
+            'status' => true,
+            'chat_id' => $chatId,
+        ];
+
+
     }
 
 

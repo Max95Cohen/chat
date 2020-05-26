@@ -2,6 +2,8 @@
 
 
 namespace Controllers;
+
+use Helpers\UserHelper;
 use Redis;
 
 class AuthController
@@ -9,32 +11,37 @@ class AuthController
 
     public function init(array $params)
     {
-        $userId = $params['userID'];
+        $userId = $params['user_id'];
         $connectionId = $params['connection_id'];
-        $token = $params['userToken'];
+
+
+       // if (!UserHelper::checkToken($userId, $params['userToken'])) {
+//            return [
+//                'data' => [
+//                    'status' => 'false',
+//                ],
+//                'notify_users' => [
+//                    $userId
+//                ],
+//            ];
+//        }
 
         $redis = new Redis();
-        $redis->connect('127.0.0.1',6379);
-
-        $checkToken = $redis->hGet($userId,'unique');
-
-        if ($token == 'testUserToken' || $token == $checkToken) {
-            return [
-             'authorize' => false
-            ];
-        }
-
-
-
-        $redis->set("connection:user:{$userId}",$params['connection_id']);
+        $redis->connect('127.0.0.1', 6379);
+        $redis->set("con:{$userId}", $connectionId);
 
         return [
-           'user_id' => $userId,
-           'connection_id' => $connectionId
+            'data' => [
+                'status' =>'true',
+                'user_id' => $userId,
+                'connection_id' => $connectionId,
+            ],
+            'notify_users' => [
+                $userId
+            ]
         ];
 
     }
-
 
 
 }

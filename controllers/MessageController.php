@@ -8,6 +8,11 @@ class MessageController
 {
     private $r;
 
+    const NO_DELTED_STATUS = 0;
+    const DELETED_STATUS = 1;
+    const EDITED_STATUS = 2;
+
+
     public function __construct()
     {
         $this->r = new Redis();
@@ -22,7 +27,7 @@ class MessageController
         $r = new Redis();
         $r->connect('127.0.0.1', 6379);
 
-        $data  = json_decode($data,true);
+        $data = json_decode($data, true);
 
         $chatId = $data['chat_id'];
         $messageText = $data['text'];
@@ -33,37 +38,37 @@ class MessageController
         $userId = 100;
 
 // проверяем есть ли пользователь в списке подписчиков
-        $chatMembers = $r->zRange("chat:members:".$chatId,0,-1);
+        $chatMembers = $r->zRange("chat:members:" . $chatId, 0, -1);
 
         $checkTrue = array_flip($chatMembers)[$userId] ?? null;
         if (!is_null($checkTrue)) {
             // add message
-            $chatMessageCounter = $r->incrBy("chat:message:counter:{$chatId}",1);
+            $chatMessageCounter = $r->incrBy("chat:message:counter:{$chatId}", 1);
             // как будет происходить создание сообщения
 
             // увеличивается count всех сообщений
-            $messageCounter = $r->incrBy('message:counter',1);
+            $messageCounter = $r->incrBy('message:counter', 1);
             // создается само сообщения has table
             $messageHashTableKey = "message:{$messageCounter}";
 
-            $r->hSet($messageHashTableKey,'chat_id',$chatId);
-            $r->hSet($messageHashTableKey,'user_id',$userId);
-            $r->hSet($messageHashTableKey,'text',$messageText);
-            $r->hSet($messageHashTableKey,'files',$messageFiles);
-            $r->hSet($messageHashTableKey,'created',date('Y-m-d-H:i:s'));
-            $r->hSet($messageHashTableKey,'images',$messageImages);
-            $r->hSet($messageHashTableKey,'edited',0);
-            $r->hSet($messageHashTableKey,'edited_date',null);
+            $r->hSet($messageHashTableKey, 'chat_id', $chatId);
+            $r->hSet($messageHashTableKey, 'user_id', $userId);
+            $r->hSet($messageHashTableKey, 'text', $messageText);
+            $r->hSet($messageHashTableKey, 'files', $messageFiles);
+            $r->hSet($messageHashTableKey, 'created', date('Y-m-d-H:i:s'));
+            $r->hSet($messageHashTableKey, 'images', $messageImages);
+            $r->hSet($messageHashTableKey, 'edited', 0);
+            $r->hSet($messageHashTableKey, 'edited_date', null);
 
             // сообщение добавляется в чат
 
             // Увеличиваю counter сообщения каждого чата
 
-            $chatMessageCounter = $r->incrBy('chat:message:counter',1);
+            $chatMessageCounter = $r->incrBy('chat:message:counter', 1);
 
             //Добавляю сообщение в чат
 
-            $r->zAdd("chat:messages:{$chatId}",['NX'],$chatMessageCounter,$messageCounter);
+            $r->zAdd("chat:messages:{$chatId}", ['NX'], $chatMessageCounter, $messageCounter);
 
         }
 
@@ -81,7 +86,7 @@ class MessageController
         $userId = $unic == 'testUserUnic' ? 100 : null;
 
         if ($userId) {
-            $this->r->zAdd("user:chat:deleted:message:{$userId}:{$chatId}",['NX'],time(),$messageId);
+            $this->r->zAdd("user:chat:deleted:message:{$userId}:{$chatId}", ['NX'], time(), $messageId);
         }
 
         return json_encode([
@@ -99,7 +104,7 @@ class MessageController
         $userId = $unic == 'testUserUnic' ? 100 : null;
 
         // достаем это сообщение из списка
-        $checkExistMessageId = $this->r->zRangeByLex("chat:messages:{$chatId}",'-',"[$messageId");
+        $checkExistMessageId = $this->r->zRangeByLex("chat:messages:{$chatId}", '-', "[$messageId");
         if ($checkExistMessageId) {
             $messageId = $checkExistMessageId[0];
             // достаем само сообщение
@@ -109,7 +114,7 @@ class MessageController
                     // удаляем само сообщение
                     $this->r->del("message:{$messageId}");
                 }
-                if ($this->r->zRem("chat:messages:{$chatId}",$messageId)) {
+                if ($this->r->zRem("chat:messages:{$chatId}", $messageId)) {
                     return json_encode([
                         'message_id' => $messageId,
                         'success' => true
@@ -122,6 +127,45 @@ class MessageController
 
     }
 
+
+    public function create(array $data)
+    {
+        /*
+         *  как мы будем сохранять сообщение? Будет ли у него какой нибудь counter?
+         *  если да то что мне возвращать фронту чтобы он мог его удалить или редактировать
+         *  когда он его удалил нужно чтобы было понятно удалил он только у себя или сразу у всех в чате
+         *  кто по привелегиям может удалять сообщения в чате, есть ли какой-то временной промежуток удаления
+         */
+
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
+
+        // у каждого юзера есть counter сообщений
+        $userId = $data['user_id'];
+
+
+        $messageId = $redis->incrBy("user:message:{$userId}", 1);
+
+        // добаляем сообщение в redis
+        $redis->hSet("message:$messageId", 'user_id', $data['user_id']);
+        $redis->hSet("message:$messageId", 'text', $data['text']);
+        $redis->hSet("message:$messageId", 'chat_id', $data['chat_id']);
+        // добавляем сообщение в чат
+
+        $messageCount = $redis->zCount("chat:{$data['chat_id']}", 0, -1);
+        $redis->zAdd("chat:{$data['chat_id']}", ['NX'], $messageId, ++$messageCount);
+        // добавляем сообщение в общий список сообщений
+        $redis->zAdd('all:messages', ['NX'], $messageId, self::NO_DELTED_STATUS);
+
+        return [
+            'data' => [
+                'status' => 'true',
+                'text' => $data['text'],
+            ],
+            'notify_users' => $redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 3),
+        ];
+
+    }
 
 
 }
