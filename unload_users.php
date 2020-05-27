@@ -28,14 +28,19 @@ $capsule->setAsGlobal();
 
 $capsule = new \Illuminate\Database\Capsule\Manager();
 
-$users = \Illuminate\Database\Capsule\Manager::table('customers')->limit(10)->get();
+$users = \Illuminate\Database\Capsule\Manager::table('customers')->get();
 $redis = new \Redis();
 $redis->connect('127.0.0.1',6379);
 
 
+//$test = $redis->zRevRangeByScore('user:chats:1','+inf','-inf',['limit'=>[20,40]]);
+//
+//dd($test);
+
+
 foreach ($users as $user) {
-//    $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
-//    $redis->zAdd("users:phones", ['NX'],$phoneInCorrectFormat,$user->id);
+    $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
+    $redis->zAdd("users:phones", ['NX'],$phoneInCorrectFormat,$user->id);
     $redis->hSet($user->id,'token',$user->unic);
 
 

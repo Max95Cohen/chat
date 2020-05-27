@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Helpers\ChatHelper;
+use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager as DB;
 use Redis;
 
@@ -158,8 +159,7 @@ class ChatController
 
         array_push($userIds, $data['user_id']);
         $redis = new Redis();
-        $redis->connect('127.0.0.1',6379);
-
+        $redis->connect('127.0.0.1', 6379);
 
 
         $chatId = DB::table('chats')->insertGetId([
@@ -179,15 +179,133 @@ class ChatController
                         'chat_id' => $chatId,
                         'role' => $role,
                     ];
-                    $redis->zAdd("chat:members:{$chatId}",['NX'],$role,$userId);
+                    $redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
+                    $redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
                 }
                 DB::table('chat_members')->insert($membersData);
         }
 
-        return [
+        $data = [
             'status' => true,
             'chat_id' => $chatId,
         ];
+
+        return ResponseFormatHelper::successResponseInCorrectFormat($userIds, $data);
+
+
+    }
+
+    public function getAll(array $data)
+    {
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
+
+        $page = $data['page'] ?? 1;
+        $onePageChatCount = 20;
+
+
+        $startChat = $onePageChatCount * $page - $onePageChatCount;
+        $endChat = $startChat + $onePageChatCount;
+
+        $userChatIds = $redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
+
+
+        $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
+
+        // нужно для сортировки,
+        $responseData = [];
+
+        // получить user_id всех авторов последних сообщений и взять их аватарки и имена из базы
+
+        $allUserIds = [];
+        foreach ($userChatIds as $userChatId) {
+            $lastMessageId = $redis->zRange("chat:$userChatId", -1, -1);
+
+            if ($lastMessageId) {
+                $lastMessageUserId = $redis->hGet("message:{$lastMessageId[0]}", 'user_id');
+                $allUserIds[] = $lastMessageUserId[0];
+
+            }
+
+        }
+        $allUserIds = array_unique($allUserIds);
+        $users = DB::table('customers')->whereIn('id', $allUserIds)->select('id', 'avatar', 'name')->get();
+
+
+        foreach ($userChatIds as $userChatId) {
+            $chat = $userChats->where('id', $userChatId)->first();
+            $lastMessageId = $redis->zRange("chat:$userChatId", -1, -1);
+            $lastMessage = null;
+
+            if ($lastMessageId) {
+                $lastMessage = $redis->hGetAll("message:{$lastMessageId[0]}");
+            }
+
+            if ($chat && $lastMessage) {
+                $messageOwner = $users->where('id', $lastMessage['user_id'])->first();
+                $responseData[] = [
+                    'id' => $userChatId,
+                    'avatar' => 'todo avatar',
+                    'name' => $chat->name,
+                    'type' => $chat->type,
+                    'members_count' => $chat->members_count,
+                    'last_message' => $lastMessage != [] ? [
+                        'id' => $lastMessageId,
+                        'avatar' => $messageOwner->avatar ?? '',
+                        'user_name' => $messageOwner->user_name ?? '',
+                        'text' => $lastMessage['text'] ?? '',
+                        'time' => $lastMessage['time'] ?? '',
+                    ] : [],
+                ];
+            }
+
+        }
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
+
+    }
+
+    public function getOne(array $data)
+    {
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
+
+        $page = $data['page'] ?? 1;
+        $chatId = $data['chat_id'];
+        $onePageMessageCount = 20;
+        $responseData = [];
+        if ($page < 2) {
+            $startChat = $onePageMessageCount * $page - $onePageMessageCount;
+            $endChat = $startChat + $onePageMessageCount;
+
+            $chatMessagesId = $redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
+
+            $allMessages = [];
+            foreach ($chatMessagesId as $chatMessageId) {
+                $message = $redis->hGetAll($chatMessageId);
+                $allMessages[$chatMessageId] = [
+                    'user_id' => $message['user_id'],
+                    'text' => $message['text'],
+                    'chat_id' => $message['chat_id'],
+                    'time' => $message['time'],
+                ];
+            }
+            $needleUsersIds = collect($allMessages)->pluck('user_id')->unique();
+            $users = DB::table('customers')->whereIn('id', $needleUsersIds)->get();
+
+            foreach ($allMessages as $messageId => $message) {
+                $user = $users->where('id', $message['user_id'])->first();
+                $responseData[] = [
+                    'user_id' => $message['user_id'],
+                    'user_name' => $user->name,
+                    'avatar' => $user->avatar,
+                    'text' => $message['text'],
+                    'time' => $message['time'],
+                    'write' => '0'
+                ];
+            }
+            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
+
+        }
 
 
     }

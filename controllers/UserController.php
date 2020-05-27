@@ -5,6 +5,7 @@ namespace Controllers;
 
 
 use Helpers\PhoneHelper;
+use Helpers\ResponseFormatHelper;
 
 class UserController
 {
@@ -20,14 +21,16 @@ class UserController
         $checkExist = $redis->zRangeByScore('users:phones',$phone,$phone);
 
         if (count($checkExist)) {
-            return [
-              'success' => true
-            ];
+            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+                'status' => 'true',
+                'phone' =>$data['phone']
+            ]);
         }
 
-        return  [
-          'success' => false,
-        ];
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+            'status' => 'false',
+            'phone' =>$data['phone']
+        ]);
 
     }
 

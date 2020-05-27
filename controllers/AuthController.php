@@ -3,6 +3,7 @@
 
 namespace Controllers;
 
+use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Redis;
 
@@ -15,7 +16,7 @@ class AuthController
         $connectionId = $params['connection_id'];
 
 
-       // if (!UserHelper::checkToken($userId, $params['userToken'])) {
+        // if (!UserHelper::checkToken($userId, $params['userToken'])) {
 //            return [
 //                'data' => [
 //                    'status' => 'false',
@@ -30,16 +31,15 @@ class AuthController
         $redis->connect('127.0.0.1', 6379);
         $redis->set("con:{$userId}", $connectionId);
 
-        return [
-            'data' => [
-                'status' =>'true',
-                'user_id' => $userId,
-                'connection_id' => $connectionId,
-            ],
-            'notify_users' => [
-                $userId
-            ]
+        $data = [
+            'status' => 'true',
+            'user_id' => $userId,
+            'connection_id' => $connectionId,
         ];
+
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId], $data);
+
 
     }
 

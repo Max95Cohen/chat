@@ -4,10 +4,14 @@ use Controllers\RouterController;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$server = new swoole_websocket_server("127.0.0.1", 9502);
+$server = new swoole_websocket_server("0.0.0.0", 9503,SWOOLE_BASE, SWOOLE_SOCK_TCP);
 
 
 $capsule = new Illuminate\Database\Capsule\Manager();
+
+
+
+
 
 
 $capsule->addConnection([
@@ -35,8 +39,8 @@ $server->on('message', function ($server, $frame) {
 
 
     $requestData = (json_decode($frame->data, true));
-
-    $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
+    dd($requestData);
+    $responseData = RouterController::executeRoute($requestData['data'], $frame->fd);
 
 
     $notifyUsers = $responseData['notify_users'];

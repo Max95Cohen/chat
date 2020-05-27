@@ -142,27 +142,37 @@ class MessageController
 
         // у каждого юзера есть counter сообщений
         $userId = $data['user_id'];
-
+        $chatId = $data['chat_id'];
 
         $messageId = $redis->incrBy("user:message:{$userId}", 1);
 
         // добаляем сообщение в redis
-        $redis->hSet("message:$messageId", 'user_id', $data['user_id']);
-        $redis->hSet("message:$messageId", 'text', $data['text']);
-        $redis->hSet("message:$messageId", 'chat_id', $data['chat_id']);
+        $redis->hSet("message:$userId:$messageId", 'user_id', $data['user_id']);
+        $redis->hSet("message:$userId:$messageId", 'text', $data['text']);
+        $redis->hSet("message:$userId:$messageId", 'chat_id', $data['chat_id']);
+        $redis->hSet("message:$userId:$messageId", 'time', time());
         // добавляем сообщение в чат
 
-        $messageCount = $redis->zCount("chat:{$data['chat_id']}", 0, -1);
-        $redis->zAdd("chat:{$data['chat_id']}", ['NX'], $messageId, ++$messageCount);
+        $redis->zAdd("chat:{$data['chat_id']}", ['NX'], time(),"message:$userId:$messageId");
         // добавляем сообщение в общий список сообщений
-        $redis->zAdd('all:messages', ['NX'], $messageId, self::NO_DELTED_STATUS);
+        $redis->zAdd('all:messages', ['NX'], "message:$userId:$messageId", self::NO_DELTED_STATUS);
+        // ставим последнее время для фильтрации чатов в списке пользователя
+//        $redis->zRem("user:chats:{$userId}",$chatId);
+
+        $notifyUsers = $redis->zRangeByScore("chat:members:{$data['chat_id']}",0,3);
+
+        foreach ($notifyUsers as $notifyUser) {
+            $redis->zAdd("user:chats:{$notifyUser}", ['XX'],time(), $chatId);
+        }
+
 
         return [
             'data' => [
                 'status' => 'true',
                 'text' => $data['text'],
             ],
-            'notify_users' => $redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 3),
+            // удаляю из оповещения по сокету самого пользователя который отправил сообщение
+            'notify_users' => array_diff($notifyUsers,[$userId]),
         ];
 
     }

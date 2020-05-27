@@ -2,6 +2,8 @@
 
 namespace Controllers;
 
+use Helpers\ResponseFormatHelper;
+
 class RouterController
 {
 
@@ -24,12 +26,20 @@ class RouterController
             'action' => 'ChatController@getAll',
             'params'=> true,
         ],
+        'chat:get' =>[
+            'action' => 'ChatController@getOne',
+            'params'=> true,
+        ],
 
         //messageController
         'message:create' => [
             'action' => 'MessageController@create',
             'params' => true,
         ],
+        'test:ping' => [
+            'action' => 'RouterController@ping'
+        ]
+
 
 
     ];
@@ -43,6 +53,8 @@ class RouterController
             $params['connection_id'] = $fd;
         }
 
+        $params['cmd'] = $route;
+
         if ($route) {
             $controllerAndMethod = explode('@', $route['action']);
             $controller = 'Controllers\\' . $controllerAndMethod[0];
@@ -51,6 +63,12 @@ class RouterController
         }
 
         return '404';
+    }
+
+    public function ping($data)
+    {
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],['ping']);
+
     }
 
 
