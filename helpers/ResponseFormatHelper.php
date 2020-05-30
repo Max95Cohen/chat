@@ -14,7 +14,6 @@ class ResponseFormatHelper
     public static function successResponseInCorrectFormat(array $notifyUsers, array $data)
     {
         return [
-            'cmd' =>$data['cmd'],
             'notify_users' => $notifyUsers,
             'data' => $data,
         ];

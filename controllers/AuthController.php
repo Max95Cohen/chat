@@ -38,6 +38,13 @@ class AuthController
         ];
 
 
+        $redis->zAdd("users:connections",['CH'],$connectionId,$userId);
+
+        // удаляем время последнего выхода юзера из приложения, если этого ключа нет пользователь онлайн
+        $redis->del("user:last:visit:{$userId}");
+
+        $redis->close();
+
         return ResponseFormatHelper::successResponseInCorrectFormat([$userId], $data);
 
 

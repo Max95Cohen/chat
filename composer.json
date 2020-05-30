@@ -8,7 +8,8 @@
     ],
     "require": {
         "ext-redis": "*",
-        "illuminate/database": "^7.12"
+        "illuminate/database": "^7.12",
+        "nesbot/carbon": "^2.35"
     },
     "autoload": {
         "psr-4": {

@@ -16,6 +16,14 @@ class RouterController
             'action' => 'UserController@checkExist',
             'params' => true,
         ],
+        'user:writing' => [
+            'action' => 'UserController@writing',
+            'params' => true,
+        ],
+        'user:check:online' => [
+            'action' => 'UserController@checkOnline',
+            'params' => true,
+        ],
 
         //ChatController
         'chat:create' => [
@@ -24,11 +32,11 @@ class RouterController
         ],
         'chats:get' => [
             'action' => 'ChatController@getAll',
-            'params'=> true,
+            'params' => true,
         ],
-        'chat:get' =>[
+        'chat:get' => [
             'action' => 'ChatController@getOne',
-            'params'=> true,
+            'params' => true,
         ],
 
         //messageController
@@ -36,10 +44,21 @@ class RouterController
             'action' => 'MessageController@create',
             'params' => true,
         ],
+        'message:write' => [
+            'action' => 'MessageController@write',
+            'params' => true,
+        ],
+        // memberController
+
+        'chat:members' => [
+            'action' => 'MemberController@getChatMembers',
+            'params' => true,
+        ],
+
+        //test
         'test:ping' => [
             'action' => 'RouterController@ping'
-        ]
-
+        ],
 
 
     ];
@@ -67,7 +86,7 @@ class RouterController
 
     public function ping($data)
     {
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],['ping']);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ['ping']);
 
     }
 

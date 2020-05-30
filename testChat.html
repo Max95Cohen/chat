@@ -47,7 +47,7 @@
         //     data: {
         //         user_id: 1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         phone:'7909961990',
+        //         phone:'77000000006',
         //     }
         //
         // }));
@@ -58,8 +58,8 @@
         //     data: {
         //         user_id: 1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         user_ids:'40',
-        //         chat_name:"тестовое имя чата",
+        //         user_ids:'13',
+        //         chat_name:"",
         //         type:0,
         //     }
         //
@@ -68,9 +68,9 @@
         // socket.send(JSON.stringify({
         //     cmd: 'message:create',
         //     data: {
-        //         user_id: 1,
+        //         user_id: 113626,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         chat_id:6,
+        //         chat_id:27954,
         //         text:'тестовое сообщение'
         //     }
         //
@@ -80,7 +80,7 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chats:get',
         //     data: {
-        //         user_id: 1,
+        //         user_id: 40,
         //         page:1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
@@ -91,13 +91,62 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chat:get',
         //     data: {
-        //         user_id: 1,
-        //         chat_id:6,
+        //         user_id: 113629,
+        //         chat_id:104,
         //         page:1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
         // }));
+        // сделать сообщение прочитанным
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:write',
+        //     data: {
+        //         user_id: 113629,
+        //         chat_id:104,
+        //         message_id:'message:30220:84',
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'user:writing',
+        //     data: {
+        //         user_id: 1,
+        //         chat_id:6,
+        //         message_id:'message:30220:84',
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+
+
+        // принимает строкой список всех пользователей чей онлайн нужно проверить
+        // socket.send(JSON.stringify({
+        //     cmd: 'user:check:online',
+        //     data: {
+        //         user_id: 1,
+        //         users_ids:'40,6',
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+
+
+        // выводит список пользователей из чата
+        socket.send(JSON.stringify({
+            cmd: 'chat:members',
+            data: {
+                user_id: 1,
+                chat_id:18480,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+            }
+
+        }));
+
+
 
 
     });

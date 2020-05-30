@@ -4,35 +4,40 @@
 namespace Controllers;
 
 
+use Helpers\ResponseFormatHelper;
+use Helpers\UserHelper;
 use Redis;
 
 class MemberController
 {
 
-    private $r;
-
-    public function __construct()
+    public function getChatMembers(array $data)
     {
-        $this->r = new Redis();
-        $this->r->connect('127.0.0.1',6379);
-    }
-
-    public function store()
-    {
-        $data = [
-            'chat_id' => 6,
-            'unic' => 102,
-        ];
         $chatId = $data['chat_id'];
-        //@TODO get user id by unic
+        $redis = new Redis();
+        $redis->connect('127.0.0.1', 6379);
 
-        $userId = 102;
-        $chatMemberKey = "chat:member:count:{$chatId}";
-        $chatMemberCount = $this->r->incrBy($chatMemberKey,1);
 
-        $this->r->zAdd("chat:members:{$chatId}",['NX'],$chatMemberCount,$userId);
+        $membersId = $redis->zRangeByScore("chat:members:{$chatId}",0,3,['withscores' => true]);
+        $responseData = [];
 
-        // @TODO add json response for front end dev
+
+        foreach ($membersId as $memberId => $role) {
+            $online = UserHelper::checkOnline($memberId,$redis);
+
+            $responseData[] =[
+                'user_id' => $memberId,
+                'chat_id' => $chatId,
+                'avatar' => $redis->get("user:avatar:$memberId"),
+                'user_name' => $redis->get("user:name:$memberId"),
+                'online' => $online,
+                'role' => strval($role)
+            ];
+        }
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
+
+
     }
 
 }

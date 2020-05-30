@@ -1,17 +1,14 @@
 <?php
 
+use Carbon\Carbon;
 use Controllers\RouterController;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$server = new swoole_websocket_server("0.0.0.0", 9503,SWOOLE_BASE, SWOOLE_SOCK_TCP);
+$server = new swoole_websocket_server("0.0.0.0", 9502,SWOOLE_BASE, SWOOLE_SOCK_TCP);
 
 
 $capsule = new Illuminate\Database\Capsule\Manager();
-
-
-
-
 
 
 $capsule->addConnection([
@@ -27,6 +24,9 @@ $capsule->addConnection([
 
 $capsule->setAsGlobal();
 
+
+Carbon::setLocale('ru');
+
 $server->on('open', function ($server, $req) {
 
     return $req->fd;
@@ -37,18 +37,18 @@ $server->on('message', function ($server, $frame) {
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);
 
-
     $requestData = (json_decode($frame->data, true));
-    dd($requestData);
-    $responseData = RouterController::executeRoute($requestData['data'], $frame->fd);
-
+    $responseData = RouterController::executeRoute($requestData['cmd'],$requestData['data'], $frame->fd);
 
     $notifyUsers = $responseData['notify_users'];
-    $response = $responseData['data'];
+    $response = [];
+    $response['cmd'] = $requestData['cmd'];
+    $response['data'] = $responseData['data'];
 
     foreach ($notifyUsers as $notifyUser) {
-        $connectionId = $redis->get("con:$notifyUser");
-        if ($connectionId) {
+        $connectionId = intval($redis->get("con:$notifyUser"));
+        $checkConnection = $redis->zRangeByScore('users:connections',$connectionId,$connectionId);
+        if ($checkConnection) {
             $server->push($connectionId, json_encode($response,JSON_UNESCAPED_UNICODE));
         }
     }
@@ -58,6 +58,18 @@ $server->on('message', function ($server, $frame) {
 
 $server->on('close', function ($server, $fd) {
     echo "connection close: {$fd}\n";
+    $redis = new Redis();
+    $redis->connect('127.0.0.1',6379);
+
+    $getUserId = $redis->zRangeByScore('users:connections',$fd,$fd);
+    $userId = array_shift($getUserId);
+
+    $redis->zRemRangeByScore('users:connections',$fd,$fd);
+    $redis->set("user:last:visit:{$userId}",time());
+
+
+    $redis->close();
+
 });
 
 
