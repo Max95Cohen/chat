@@ -10,6 +10,16 @@ use Redis;
 
 class ChatController
 {
+    private $redis;
+
+
+    public function __construct()
+    {
+        $this->redis = new Redis();
+        $this->redis->connect('127.0.0.1',6379);
+
+    }
+
 
     const PRIVATE = 0;
     const GROUP = 1;
@@ -262,6 +272,37 @@ class ChatController
 
         $responseData = MessageHelper::getMessageIncorrectFormat($allMessages,$redis);
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
+    }
+
+    public function pinned(array $data)
+    {
+        $chatId = $data['chat_id'];
+        $userId = $data['user_id'];
+
+        // проверяем количество уже закрепленных чатов
+        $pinnedCount = $this->redis->get("user:pinned:count:{$userId}");
+
+        if ($pinnedCount >= 5) {
+            return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+                'status' => 'false',
+                'user_id' => $userId,
+                'message' => 'закреплять можно не больше ' . $pinnedCount .' чатов'
+            ]);
+        }
+
+
+        // ставит 1 если юзер закрепил чат если чат не закреплен просто удаляется ключ из redis
+        $this->redis->set("chat:pinned:{$userId}:$chatId",1);
+        $this->redis->incrBy("user:pinned:count:{$userId}");
+
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+            'user_id' => $userId,
+            'chat_id' => $chatId,
+            'message' => 'чат успешно закреплен',
+            'status' => 'true',
+            'pinned_count' => $pinnedCount
+        ]);
     }
 
 
