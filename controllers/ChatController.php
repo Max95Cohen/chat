@@ -33,16 +33,16 @@ class ChatController
         $userIds = explode(',', $data['user_ids']);
 
         array_push($userIds, $data['user_id']);
-        $redis = new Redis();
-        $redis->connect('127.0.0.1', 6379);
+
+
         $anotherUserName = null;
         // временный костыль
 
         if ($data['type'] == self::PRIVATE) {
             $anotherUser = $userIds[0];
-            $checkChat =$redis->get("private:{$anotherUser}:{$data['user_id']}");
-            $anotherUserAvatar = $redis->zRangeByScore('users:avatars',$anotherUser,$anotherUser)[0] ?? '';
-            $anotherUserName = $redis->zRangeByScore('users:names',$anotherUser,$anotherUser)[0] ?? '';
+            $checkChat =$this->redis->get("private:{$anotherUser}:{$data['user_id']}");
+            $anotherUserAvatar = $this->redis->zRangeByScore('users:avatars',$anotherUser,$anotherUser)[0] ?? '';
+            $anotherUserName = $this->redis->zRangeByScore('users:names',$anotherUser,$anotherUser)[0] ?? '';
 
             if ($checkChat) {
                 return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
@@ -73,10 +73,10 @@ class ChatController
                         'chat_id' => $chatId,
                         'role' => $role,
                     ];
-                    $redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
-                    $redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
-                    $redis->set("private:{$userId}:{$data['user_id']}",$chatId);
-                    $redis->set("private:{$data['user_id']}:{$userId}",$chatId);
+                    $this->redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
+                    $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
+                    $this->redis->set("private:{$userId}:{$data['user_id']}",$chatId);
+                    $this->redis->set("private:{$data['user_id']}:{$userId}",$chatId);
                 }
                 DB::table('chat_members')->insert($membersData);
             case self::GROUP:
@@ -87,8 +87,8 @@ class ChatController
                         'chat_id' => $chatId,
                         'role' => $role,
                     ];
-                    $redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
-                    $redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
+                    $this->redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
+                    $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
                 }
                 DB::table('chat_members')->insert($membersData);
 
@@ -110,8 +110,6 @@ class ChatController
 
     public function getAll(array $data)
     {
-        $redis = new Redis();
-        $redis->connect('127.0.0.1', 6379);
 
         $page = $data['page'] ?? 1;
         $onePageChatCount = 20;
@@ -120,7 +118,7 @@ class ChatController
         $startChat = $onePageChatCount * $page - $onePageChatCount;
         $endChat = $startChat + $onePageChatCount;
 
-        $userChatIds = $redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
+        $userChatIds = $this->redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
 
 
         $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
@@ -132,10 +130,10 @@ class ChatController
 
         $allUserIds = [];
         foreach ($userChatIds as $userChatId) {
-            $lastMessageId = $redis->zRange("chat:$userChatId", -1, -1);
+            $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
 
             if ($lastMessageId) {
-                $lastMessageUserId = $redis->hGet("message:{$lastMessageId[0]}", 'user_id');
+                $lastMessageUserId = $this->redis->hGet("message:{$lastMessageId[0]}", 'user_id');
                 $allUserIds[] = $lastMessageUserId[0];
 
             }
@@ -147,24 +145,24 @@ class ChatController
 
         foreach ($userChatIds as $userChatId) {
             $chat = $userChats->where('id', $userChatId)->first();
-            $lastMessageId = $redis->zRange("chat:$userChatId", -1, -1);
+            $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
             $lastMessage = null;
             if ($lastMessageId) {
-                $lastMessage = $redis->hGetAll($lastMessageId[0]);
+                $lastMessage = $this->redis->hGetAll($lastMessageId[0]);
             }
 
             if ($chat) {
                 $messageOwner =$lastMessage ? $users->where('id', $lastMessage['user_id'] ?? null)->first() : '';
                 //@TODO отрефакторить это
-                $chatUsers = $redis->zRange("chat:members:$userChatId",0,-1);
+                $chatUsers = $this->redis->zRange("chat:members:$userChatId",0,-1);
 
                 $anotherUsers = array_diff($chatUsers,[$data['user_id']]);
                 $anotherUserId = array_shift($anotherUsers);
 
                 $responseData[] = [
                     'id' => $userChatId,
-                    'avatar' => $redis->get("user:avatar:{$anotherUserId}"),
-                    'name' => $redis->get("user:name:{$anotherUserId}"),
+                    'avatar' => $this->redis->get("user:avatar:{$anotherUserId}"),
+                    'name' => $this->redis->get("user:name:{$anotherUserId}"),
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
                     'last_message' => $lastMessage ==null ? new \stdClass() : [
@@ -184,8 +182,6 @@ class ChatController
 
     public function getOne(array $data)
     {
-        $redis = new Redis();
-        $redis->connect('127.0.0.1', 6379);
 
         $page = $data['page'] ?? 1;
         $chatId = $data['chat_id'];
@@ -196,7 +192,7 @@ class ChatController
             $startChat = $count * $page - $count;
             $endChat = $startChat + $count;
 
-            $chatMessagesId = $redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
+            $chatMessagesId = $this->redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
 
 
 
@@ -205,14 +201,14 @@ class ChatController
 
             foreach ($chatMessagesId as $chatMessageId) {
 
-                $message = $redis->hGetAll($chatMessageId);
+                $message = $this->redis->hGetAll($chatMessageId);
 
                 $allMessages[$chatMessageId] = [
                     'id' =>$chatMessageId,
                     'user_id' => $message['user_id'],
-                    'avatar' => $redis->get("user:avatar:{$message['user_id']}"),
+                    'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
                     'avatar_url' =>'https://indigo24.xyz/uploads/avatars/',
-                    'user_name' => $redis->get("user:name:{$message['user_id']}"),
+                    'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                     'text' => $message['text'],
                     'chat_id' => $message['chat_id'],
                     'time' => $message['time'],
@@ -222,8 +218,8 @@ class ChatController
                 $messagesForDivider[] = [
                     'id' =>$chatMessageId,
                     'user_id' => $message['user_id'],
-                    'avatar' => $redis->get("user:avatar:{$message['user_id']}"),
-                    'user_name' => $redis->get("user:name:{$message['user_id']}"),
+                    'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
+                    'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                     'text' => $message['text'],
                     'chat_id' => $message['chat_id'],
                     'time' => $message['time'],
@@ -232,10 +228,10 @@ class ChatController
                 ];
 
                 // делаю сообщения прочитанными
-                $redis->hSet($chatMessageId, 'status', MessageController::WRITE);
+                $this->redis->hSet($chatMessageId, 'status', MessageController::WRITE);
 
             }
-            $responseData = MessageHelper::getMessageIncorrectFormat($allMessages,$redis);
+            $responseData = MessageHelper::getMessageIncorrectFormat($allMessages,$this->redis);
             $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
 
             $messagesWithDivider = [];
@@ -270,7 +266,7 @@ class ChatController
             return (array)$value;
         }, $allMessages);
 
-        $responseData = MessageHelper::getMessageIncorrectFormat($allMessages,$redis);
+        $responseData = MessageHelper::getMessageIncorrectFormat($allMessages,$this->redis);
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
     }
 

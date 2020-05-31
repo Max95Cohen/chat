@@ -7,7 +7,6 @@ use Redis;
 
 class MessageController
 {
-    private $r;
 
     const NO_DELETED_STATUS = 0;
     const DELETED_STATUS = 1;
