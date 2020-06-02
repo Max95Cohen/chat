@@ -12,6 +12,7 @@ class RouterController
             'action' => 'AuthController@init',
             'params' => true,
         ],
+
         'user:check' => [
             'action' => 'UserController@checkExist',
             'params' => true,
@@ -64,13 +65,17 @@ class RouterController
     ];
 
 
-    public static function executeRoute($route, array $params = null, $fd = null)
+    public static function executeRoute($route, array $params = null, $fd = null,$server=null)
     {
         $route = self::$routes[$route] ?? null;
 
         if ($fd) {
             $params['connection_id'] = $fd;
         }
+        if ($server){
+            $params['server'] = $server;
+        }
+
 
         $params['cmd'] = $route;
 
@@ -78,7 +83,9 @@ class RouterController
             $controllerAndMethod = explode('@', $route['action']);
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
-            return $params ? call_user_func([$controller, $method], $params) : call_user_func([$controller, $method]);
+//            return $params ? call_user_func([$controller, $method], $params) : call_user_func([$controller, $method]);
+            return  $params ? (new $controller)->$method($params) : (new $controller)->$method();
+
         }
 
         return '404';

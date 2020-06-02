@@ -5,7 +5,7 @@ use Controllers\RouterController;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$server = new swoole_websocket_server("0.0.0.0", 9502,SWOOLE_BASE, SWOOLE_SOCK_TCP);
+$server = new swoole_websocket_server("0.0.0.0", 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
 
 
 $capsule = new Illuminate\Database\Capsule\Manager();
@@ -20,6 +20,11 @@ $capsule->addConnection([
     'charset' => 'utf8',
     'collation' => 'utf8_unicode_ci',
     'prefix' => '',
+]);
+
+$server->set([
+    'ssl_cert_file' => "/etc/letsencrypt/live/oyhdo.com/fullchain.pem",
+    'ssl_key_file'  => "/etc/letsencrypt/live/oyhdo.com/privkey.pem"
 ]);
 
 $capsule->setAsGlobal();
@@ -38,7 +43,10 @@ $server->on('message', function ($server, $frame) {
     $redis->connect('127.0.0.1', 6379);
 
     $requestData = (json_decode($frame->data, true));
-    $responseData = RouterController::executeRoute($requestData['cmd'],$requestData['data'], $frame->fd);
+
+    $requestData['data']['server'] = $server;
+
+    $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
 
     $notifyUsers = $responseData['notify_users'];
     $response = [];
@@ -47,10 +55,11 @@ $server->on('message', function ($server, $frame) {
 
     foreach ($notifyUsers as $notifyUser) {
         $connectionId = intval($redis->get("con:$notifyUser"));
-        $checkConnection = $redis->zRangeByScore('users:connections',$connectionId,$connectionId);
+        $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
         if ($checkConnection) {
-            $server->push($connectionId, json_encode($response,JSON_UNESCAPED_UNICODE));
+            $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
         }
+
     }
 
 });
@@ -59,13 +68,13 @@ $server->on('message', function ($server, $frame) {
 $server->on('close', function ($server, $fd) {
     echo "connection close: {$fd}\n";
     $redis = new Redis();
-    $redis->connect('127.0.0.1',6379);
+    $redis->connect('127.0.0.1', 6379);
 
-    $getUserId = $redis->zRangeByScore('users:connections',$fd,$fd);
+    $getUserId = $redis->zRangeByScore('users:connections', $fd, $fd);
     $userId = array_shift($getUserId);
 
-    $redis->zRemRangeByScore('users:connections',$fd,$fd);
-    $redis->set("user:last:visit:{$userId}",time());
+    $redis->zRemRangeByScore('users:connections', $fd, $fd);
+    $redis->set("user:last:visit:{$userId}", time());
 
 
     $redis->close();
