@@ -2,6 +2,7 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Controllers\ChatController;
 use Illuminate\Database\Capsule\Manager as DB;
 
 $capsule = new Illuminate\Database\Capsule\Manager();
@@ -19,8 +20,6 @@ $capsule->addConnection([
 ]);
 
 $capsule->setAsGlobal();
-
-
 
 
 while (true) {
@@ -69,7 +68,33 @@ while (true) {
 
         foreach ($oneChunkDeletedMessages as $deletedMessage) {
 
-            $redis->zRem('all:messages',$deletedMessage);
+
+            // удаляю из общего списка сообщений которые нужно занести в базу данных
+//            $redis->zRem('all:messages',$deletedMessage);
+
+            $deletedMessageData = $redis->hGetAll($deletedMessage);
+
+            $deletedChatId = $deletedMessageData['chat_id'];
+
+            $chatMessageCount = $redis->zCount("chat:{$deletedChatId}", '-inf', '+inf');
+
+            if ($chatMessageCount > ChatController::AVAILABLE_COUNT_MESSAGES_IN_REDIS) {
+
+                $needleDeleteMessageCount = $chatMessageCount - ChatController::AVAILABLE_COUNT_MESSAGES_IN_REDIS;
+
+                $needleDeletedMessages = $redis->zRange("chat:{$deletedChatId}", 0, $needleDeleteMessageCount);
+
+                foreach ($needleDeletedMessages as $needleDeletedMessage) {
+                    // удаляем hset таблицу с информацией о сообщении
+                    $redis->del($needleDeletedMessage);
+
+                }
+                // удаляем ссылку на hset из zset чата
+                $redis->zRemRangeByRank("chat:{$deletedChatId}", 0, $needleDeleteMessageCount);
+
+
+            }
+
 
         }
 
