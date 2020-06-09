@@ -14,6 +14,7 @@ class UserController
 {
     private $redis;
 
+    const USER_ONLINE = 1;
 
     public function __construct()
     {
@@ -36,16 +37,18 @@ class UserController
 
             $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");
             $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userId}") : $chatId;
+            $online = UserHelper::checkOnline($userId,$this->redis);
             $this->redis->close();
 
 
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
                 'status' => 'true',
                 'phone' =>strval($data['phone']),
-                'user_id' => array_key_first($checkExist),
+                'user_id' => $userId,
                 'avatar' =>$avatar,
                 'avatar_url' => 'https://media.indigo24.com/avatars/',
-                'chat_id' =>$chatId
+                'chat_id' =>$chatId,
+                'online' => $online
             ]);
         }
         $this->redis->close();
@@ -64,13 +67,14 @@ class UserController
     {
 
         $userId = $data['user_id'];
+        $chatId = $data['chat_id'];
 
-
-        $notifyUsers = $this->redis->zRange("chat:members:{$userId}",0,-1);
+        $notifyUsers = $this->redis->zRange("chat:members:{$chatId}",0,-1);
 
         return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,[
             'user_id' => $userId,
-            'writing' => '1'
+            'writing' => '1',
+            'chat_id' => $chatId,
         ]);
 
     }

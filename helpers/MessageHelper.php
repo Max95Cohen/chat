@@ -26,6 +26,11 @@ class MessageHelper
         return $responseData;
     }
 
+    public static function deleteExtraSpaces(string $text)
+    {
+        return preg_replace('#\s{2,}#',' ',$text);
+    }
+
 
 
 }

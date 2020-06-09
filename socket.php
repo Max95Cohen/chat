@@ -5,7 +5,8 @@ use Controllers\RouterController;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$server = new swoole_websocket_server("0.0.0.0", 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
+//$server = new swoole_websocket_server("0.0.0.0", 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
+$server = new swoole_websocket_server("127.0.0.1", 9502);
 
 
 $capsule = new Illuminate\Database\Capsule\Manager();
@@ -22,10 +23,10 @@ $capsule->addConnection([
     'prefix' => '',
 ]);
 
-$server->set([
-    'ssl_cert_file' => "/etc/letsencrypt/live/oyhdo.com/fullchain.pem",
-    'ssl_key_file'  => "/etc/letsencrypt/live/oyhdo.com/privkey.pem"
-]);
+//$server->set([
+//    'ssl_cert_file' => "/etc/letsencrypt/live/oyhdo.com/fullchain.pem",
+//    'ssl_key_file'  => "/etc/letsencrypt/live/oyhdo.com/privkey.pem"
+//]);
 
 $capsule->setAsGlobal();
 

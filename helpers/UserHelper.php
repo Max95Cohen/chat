@@ -3,6 +3,7 @@
 
 namespace Helpers;
 use Carbon\Carbon;
+use Controllers\UserController;
 use Redis;
 
 class UserHelper
@@ -27,7 +28,7 @@ class UserHelper
         $offline = $redis->get("user:last:visit:{$userId}");
         $lastVisitDate = 'online';
 
-        if ($offline) {
+        if ($offline != UserController::USER_ONLINE && $offline !=false) {
             $date = date('Y-m-d H:i:s',$offline);
             $messageCreatedDate = new Carbon($date);
             $lastVisitDate =$messageCreatedDate->diffForHumans(Carbon::now());
@@ -35,6 +36,11 @@ class UserHelper
             $lastVisitDate = preg_replace('#до#','назад',$lastVisitDate);
 
         }
+
+        if($offline ==false){
+            $lastVisitDate = 'offline';
+        }
+
 
         return $lastVisitDate;
 

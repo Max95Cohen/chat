@@ -13,8 +13,8 @@
 
 <script>
 
-    // let socket = new WebSocket('ws://127.0.0.1:9502/');
-    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
+    let socket = new WebSocket('ws://127.0.0.1:9502/');
+    // let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
 
     let chatList = false;
 
@@ -24,7 +24,7 @@
         socket.send(JSON.stringify({
             cmd: 'init',
             data: {
-                user_id: 113629,
+                user_id: 1,
                 userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
             }
 
@@ -33,7 +33,7 @@
         // socket.send(JSON.stringify({
         //     cmd: 'test:ping',
         //     data: {
-        //         user_id: 1,
+        //         user_id: 30220,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
@@ -45,7 +45,7 @@
         // socket.send(JSON.stringify({
         //     cmd: 'user:check',
         //     data: {
-        //         user_id: 1,
+        //         user_id: 113629,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //         phone:'77000000006',
         //     }
@@ -56,10 +56,10 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chat:create',
         //     data: {
-        //         user_id: 113,
+        //         user_id: 104,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         user_ids:'119',
-        //         chat_name:"",
+        //         user_ids:'112',
+        //         chat_name:"sad_name",
         //         type:0,
         //     }
         //
@@ -68,44 +68,72 @@
         // socket.send(JSON.stringify({
         //     cmd: 'message:create',
         //     data: {
-        //         user_id: 113629,
+        //         user_id:1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         chat_id:104,
-        //         text:'тестовое сообщение123'
+        //         chat_id:27844,
+        //         text:'тестовое сообщеsadние123'
         //     }
         //
         // }));
 
         // получение всех чатов с пагинацией
-        socket.send(JSON.stringify({
-            cmd: 'chats:get',
-            data: {
-                user_id: 113629,
-                page:1,
-                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-            }
-
-        }));
-
-        // // получение одного чата
         // socket.send(JSON.stringify({
-        //     cmd: 'chat:get',
+        //     cmd: 'chats:get',
         //     data: {
-        //         user_id: 30220,
-        //         chat_id:104,
+        //         user_id: 104,
         //         page:1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
         // }));
+
+        // // получение одного чата
+        socket.send(JSON.stringify({
+            cmd: 'chat:get',
+            data: {
+                user_id: 1,
+                chat_id:27844,
+                page:3,
+                divider:1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+            }
+
+        }));
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:members:privileges',
+        //     data: {
+        //         user_id: 1,
+        //         chat_id:27843,
+        //         role:2,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         members:"13,40",
+        //     }
+        //
+        // }));
+        //chat:members:delete
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:members:delete',
+        //     data: {
+        //         user_id: 1,
+        //         chat_id:27843,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         members:"13,40",
+        //     }
+        //
+        // }));
+
+
+
         // сделать сообщение прочитанным
 
         // socket.send(JSON.stringify({
         //     cmd: 'message:write',
         //     data: {
-        //         user_id: 1,
-        //         chat_id:18481,
-        //         message_id:'message:1:226',
+        //         user_id: 30220,
+        //         chat_id:104,
+        //         message_id:'message:30220:97',
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
@@ -114,9 +142,8 @@
         // socket.send(JSON.stringify({
         //     cmd: 'user:writing',
         //     data: {
-        //         user_id: 1,
-        //         chat_id:6,
-        //         message_id:'message:30220:84',
+        //         user_id: 30220,
+        //         chat_id:104,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
@@ -127,7 +154,7 @@
         // socket.send(JSON.stringify({
         //     cmd: 'user:check:online',
         //     data: {
-        //         user_id: 1,
+        //         user_id: 30220,
         //         users_ids:'40,6',
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
@@ -139,8 +166,8 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members',
         //     data: {
-        //         user_id: 1,
-        //         chat_id:6,
+        //         user_id: 30220,
+        //         chat_id:104,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //

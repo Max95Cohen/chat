@@ -25,6 +25,11 @@ class RouterController
             'action' => 'UserController@checkOnline',
             'params' => true,
         ],
+        'user:writing' =>[
+            'action' => 'UserController@writing',
+            'params' => true,
+        ],
+
 
         //ChatController
         'chat:create' => [
@@ -37,6 +42,10 @@ class RouterController
         ],
         'chat:get' => [
             'action' => 'ChatController@getOne',
+            'params' => true,
+        ],
+        'chat:members' => [
+            'action' => 'ChatController@getChatMembers',
             'params' => true,
         ],
 
@@ -55,11 +64,23 @@ class RouterController
             'action' => 'MemberController@getChatMembers',
             'params' => true,
         ],
+        'chat:members:privileges' =>[
+            'action' => 'MemberController@changeUserPrivileges',
+            'params' => true,
+        ],
+        'chat:members:delete' =>[
+            'action' => 'MemberController@deleteMembers',
+            'params' => true,
+        ],
+
+
+
 
         //test
         'test:ping' => [
             'action' => 'RouterController@ping'
         ],
+
 
 
     ];

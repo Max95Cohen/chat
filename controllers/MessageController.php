@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Redis;
 
@@ -39,9 +40,13 @@ class MessageController
 
         $messageTime = time();
 
+        // текст сообщения без лишних пробелов
+
+        $messageTextWithNotDoubleSpaces = MessageHelper::deleteExtraSpaces($data['text']);
+
         // добаляем сообщение в redis
         $this->redis->hSet("message:$userId:$messageId", 'user_id', $data['user_id']);
-        $this->redis->hSet("message:$userId:$messageId", 'text', $data['text']);
+        $this->redis->hSet("message:$userId:$messageId", 'text', $messageTextWithNotDoubleSpaces);
         $this->redis->hSet("message:$userId:$messageId", 'chat_id', $data['chat_id']);
         $this->redis->hSet("message:$userId:$messageId", 'status', self::NO_WRITE);
         $this->redis->hSet("message:$userId:$messageId", 'time', $messageTime);
@@ -57,10 +62,10 @@ class MessageController
 
         // Если количество сообщений в чате больше чем AVAILABLE_COUNT_MESSAGES_IN_REDIS то самое раннее сообщение удаляется
 
-//        if ($this->redis->zCount("chat:{$chatId}",'-inf','+inf') > ChatController::AVAILABLE_COUNT_MESSAGES_IN_REDIS) {
-//            $firstMessage = $this->redis->zRange("chat:{$chatId}",0,0)[0];
-//            $this->redis->zRem("chat:{$chatId}",$firstMessage);
-//        }
+        if ($this->redis->zCount("chat:{$chatId}",'-inf','+inf') > ChatController::AVAILABLE_COUNT_MESSAGES_IN_REDIS) {
+            $firstMessage = $this->redis->zRange("chat:{$chatId}",0,0)[0];
+            $this->redis->zRem("chat:{$chatId}",$firstMessage);
+        }
 
 
         // добавляем сообщение в общий список сообщений
@@ -84,7 +89,7 @@ class MessageController
             'data' => [
                 'status' => 'true',
                 'write' => MessageController::NO_WRITE,
-                'text' => $data['text'],
+                'text' => $messageTextWithNotDoubleSpaces,
                 'chat_id' => $chatId,
                 'message_id' => "message:$userId:$messageId",
                 'user_id' => $userId,

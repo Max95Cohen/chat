@@ -70,10 +70,10 @@ while (true) {
 
 
             // удаляю из общего списка сообщений которые нужно занести в базу данных
-//            $redis->zRem('all:messages',$deletedMessage);
+            $redis->zRem('all:messages',$deletedMessage);
 
             $deletedMessageData = $redis->hGetAll($deletedMessage);
-
+            dump($deletedMessageData);
             $deletedChatId = $deletedMessageData['chat_id'];
 
             $chatMessageCount = $redis->zCount("chat:{$deletedChatId}", '-inf', '+inf');
@@ -100,5 +100,7 @@ while (true) {
 
 
     }
+    $redis->close();
+
 }
 
