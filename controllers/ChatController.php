@@ -190,11 +190,12 @@ class ChatController
 
                 $anotherUsers = array_diff($chatUsers, [$data['user_id']]);
                 $anotherUserId = array_shift($anotherUsers);
-                var_dump($lastMessageUserId !=$data['user_id']);
+                $crutchUserName = $this->redis->get("user:name:{$anotherUserId}") == false ? '' : $this->redis->get("user:name:{$anotherUserId}");
+
                 $responseData[] = [
                     'id' => $userChatId,
-                    'avatar' => $this->redis->get("user:avatar:{$anotherUserId}"),
-                    'name' => $chat->type == self::PRIVATE ? $this->redis->get("user:name:{$anotherUserId}") : $chat->name,
+                    'avatar' => $this->redis->get("user:avatar:{$anotherUserId}") == false ? '' : $this->redis->get("user:avatar:{$anotherUserId}"),
+                    'name' => $chat->type == self::PRIVATE ? $crutchUserName : $chat->name,
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
                     'unread_messages' => $lastMessageUserId !=$data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) :0,

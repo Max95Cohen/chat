@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
+use Patterns\MessageFactory\Factory;
 use Redis;
 
 class MessageController
@@ -38,34 +39,27 @@ class MessageController
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");
 
-        $messageTime = time();
+        $messageRedisKey = "message:$userId:$messageId";
 
-        // текст сообщения без лишних пробелов
+        $data['message_time'] = time();
 
-        $messageTextWithNotDoubleSpaces = MessageHelper::deleteExtraSpaces($data['text']);
 
         // добаляем сообщение в redis
-        $this->redis->hSet("message:$userId:$messageId", 'user_id', $data['user_id']);
-        $this->redis->hSet("message:$userId:$messageId", 'text', $messageTextWithNotDoubleSpaces);
-        $this->redis->hSet("message:$userId:$messageId", 'chat_id', $data['chat_id']);
-        $this->redis->hSet("message:$userId:$messageId", 'status', self::NO_WRITE);
-        $this->redis->hSet("message:$userId:$messageId", 'time', $messageTime);
+        MessageHelper::create($this->redis,$data,$messageRedisKey);
+
+        // добавляем дополнительные параметры в зависимости от типа через фабрику
+
+        $messageClass = Factory::getItem($data['message_type']);
+
+        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
+
         // добавляем сообщение в чат
 
-        $this->redis->incrBy("chat:unwrite:count:{$chatId}",1);
-
-        var_dump("message:$userId:$messageId" . " sad test");
-
-
-        $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "message:$userId:$messageId");
-
+        MessageHelper::addMessageInChat($this->redis,$chatId,$messageRedisKey);
 
         // Если количество сообщений в чате больше чем AVAILABLE_COUNT_MESSAGES_IN_REDIS то самое раннее сообщение удаляется
 
-        if ($this->redis->zCount("chat:{$chatId}",'-inf','+inf') > ChatController::AVAILABLE_COUNT_MESSAGES_IN_REDIS) {
-            $firstMessage = $this->redis->zRange("chat:{$chatId}",0,0)[0];
-            $this->redis->zRem("chat:{$chatId}",$firstMessage);
-        }
+        MessageHelper::cleanFirstMessageInRedis($this->redis,$chatId);
 
 
         // добавляем сообщение в общий список сообщений
@@ -73,32 +67,17 @@ class MessageController
         $this->redis->zAdd('all:messages', ['NX'],self::NO_WRITE, "message:$userId:$messageId");
 
         // ставим последнее время для фильтрации чатов в списке пользователя
-        $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
+        $this->redis->zAdd("user:chats:{$userId}", ['NX'], $data['message_time'], $chatId);
 
 
         $notifyUsers = $this->redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 3);
 
         foreach ($notifyUsers as $notifyUser) {
-            $this->redis->zAdd("user:chats:{$notifyUser}", ['XX'], time(), $chatId);
+            $this->redis->zAdd("user:chats:{$notifyUser}", ['XX'], $data['message_time'], $chatId);
         }
-        //временно для приватных чатов
-        $anotherUserId = array_diff($notifyUsers, [$userId]);
-        $anotherUserId = array_shift($anotherUserId);
 
         return [
-            'data' => [
-                'status' => 'true',
-                'write' => MessageController::NO_WRITE,
-                'text' => $messageTextWithNotDoubleSpaces,
-                'chat_id' => $chatId,
-                'message_id' => "message:$userId:$messageId",
-                'user_id' => $userId,
-                'time' => $messageTime,
-                'avatar' => $this->redis->get("user:avatar:{$userId}"),
-                'user_name' => $this->redis->get("user:name:{$userId}"),
-                'chat_name' => $this->redis->get("user:name:{$anotherUserId}"),
-            ],
-            // удаляю из оповещения по сокету самого пользователя который отправил сообщение
+            'data' => $messageClass->returnResponseDataForCreateMessage($data,$messageRedisKey,$this->redis),
             'notify_users' => $notifyUsers,
         ];
 
@@ -110,7 +89,7 @@ class MessageController
         $chatId = $data['chat_id'];
         $notifyUsers = $this->redis->zRange("chat:members:{$chatId}", 0, -1);
 
-        $this->redis->hSet($data['message_id'], 'status', MessageController::WRITE);
+        $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
         $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
 
         $this->redis->incrBy("chat:unwrite:count:{$chatId}",-1);

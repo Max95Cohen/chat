@@ -45,6 +45,7 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
             'Psr\\SimpleCache\\' => 16,
             'Psr\\Container\\' => 14,
             'Prophecy\\' => 9,
+            'Patterns\\' => 9,
         ),
         'I' => 
         array (
@@ -128,6 +129,10 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         'Prophecy\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy',
+        ),
+        'Patterns\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/patterns',
         ),
         'Illuminate\\Support\\' => 
         array (

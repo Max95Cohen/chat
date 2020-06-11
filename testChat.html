@@ -65,16 +65,17 @@
         //
         // }));
         //
-        // socket.send(JSON.stringify({
-        //     cmd: 'message:create',
-        //     data: {
-        //         user_id:1,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         chat_id:27844,
-        //         text:'тестовое сообщеsadние123'
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'message:create',
+            data: {
+                user_id:1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+                chat_id:27844,
+                message_type:0,
+                text:'тестовое сообщеsadние123'
+            }
+
+        }));
 
         // получение всех чатов с пагинацией
         // socket.send(JSON.stringify({
@@ -88,17 +89,17 @@
         // }));
 
         // // получение одного чата
-        socket.send(JSON.stringify({
-            cmd: 'chat:get',
-            data: {
-                user_id: 1,
-                chat_id:27844,
-                page:3,
-                divider:1,
-                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:get',
+        //     data: {
+        //         user_id: 1,
+        //         chat_id:27844,
+        //         page:3,
+        //         divider:1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',

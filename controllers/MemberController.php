@@ -89,11 +89,13 @@ class MemberController
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, '+inf', ['withscores' => true]);
 
         foreach ($deletedMembers as $deletedMember) {
-            $deletedUserRole
 
         }
 
     }
+
+
+
 
 
 }
