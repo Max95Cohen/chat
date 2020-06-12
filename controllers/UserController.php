@@ -94,6 +94,7 @@ class UserController
               'online' => $online
             ];
         }
+        $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
 
 

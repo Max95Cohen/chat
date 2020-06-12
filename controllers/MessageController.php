@@ -20,7 +20,6 @@ class MessageController
 
     private $redis;
 
-
     public function __construct()
     {
         $this->redis = new Redis();

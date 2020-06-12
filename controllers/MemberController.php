@@ -91,12 +91,14 @@ class MemberController
         $chatId = $data['chat_id'];
         $userId = $data['user_id'];
 
-        $deletedMembers = $data['members'];
+        $deletedMembers = explode(',',$data['members']);
 
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, '+inf', ['withscores' => true]);
 
         foreach ($deletedMembers as $deletedMember) {
+            if (in_array($deletedMember,$chatMembers)) {
 
+            }
         }
 
     }
