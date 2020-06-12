@@ -13,6 +13,7 @@ class MessageHelper
     const IMAGE_MESSAGE_TYPE = 1;
     const DOCUMENT_MESSAGE_TYPE = 2;
     const VOICE_MESSAGE_TYPE = 3;
+    const SYSTEM_MESSAGE_TYPE = 7;
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
@@ -21,6 +22,11 @@ class MessageHelper
     {
         $responseData = [];
         foreach ($allMessages as $messageId => $message) {
+
+            if (!is_array($message)) {
+                $message = (array)$message;
+            }
+
             $avatar = $redis->get("user:avatar:{$message['user_id']}");
             $name = $redis->get("user:name:{$message['user_id']}");
             $responseData[] = [
@@ -31,6 +37,7 @@ class MessageHelper
                 'avatar_url' => 'https://media.indigo24.com/avatars/',
                 'text' => $message['text'],
                 'time' => $message['time'],
+                'type' => $message['type'] ?? 0,
                 'write' => $message['write'] ?? '0',
             ];
         }
@@ -51,7 +58,6 @@ class MessageHelper
     public static function create(Redis $redis, array $data,string $messageRedisKey): string
     {
         $redis->hSet($messageRedisKey, 'user_id', $data['user_id']);
-        $redis->hSet($messageRedisKey, 'text', $data['text']);
         $redis->hSet($messageRedisKey, 'chat_id', $data['chat_id']);
         $redis->hSet($messageRedisKey, 'status', self::MESSAGE_NO_WRITE_STATUS);
         $redis->hSet($messageRedisKey, 'time', time());

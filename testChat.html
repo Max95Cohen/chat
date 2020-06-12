@@ -24,7 +24,7 @@
         socket.send(JSON.stringify({
             cmd: 'init',
             data: {
-                user_id: 1,
+                user_id: 113,
                 userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
             }
 
@@ -45,7 +45,7 @@
         // socket.send(JSON.stringify({
         //     cmd: 'user:check',
         //     data: {
-        //         user_id: 113629,
+        //         user_id: 1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //         phone:'77000000006',
         //     }
@@ -56,32 +56,35 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chat:create',
         //     data: {
-        //         user_id: 104,
+        //         user_id: 1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         user_ids:'112',
+        //         user_ids:'11311,123',
         //         chat_name:"sad_name",
-        //         type:0,
+        //         type:1,
         //     }
         //
         // }));
         //
-        socket.send(JSON.stringify({
-            cmd: 'message:create',
-            data: {
-                user_id:1,
-                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-                chat_id:27844,
-                message_type:0,
-                text:'тестовое сообщеsadние123'
-            }
 
-        }));
+        // var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.png"},{filename: "CjzcZxeEqFKLYAN3wkMt8CSAoe.png"}];
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:create',
+        //     data: {
+        //         user_id:1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         chat_id:27844,
+        //         message_type:0,
+        //         text:"sad message",
+        //     }
+        //
+        // }));
 
         // получение всех чатов с пагинацией
         // socket.send(JSON.stringify({
         //     cmd: 'chats:get',
         //     data: {
-        //         user_id: 104,
+        //         user_id: 1,
         //         page:1,
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
@@ -89,17 +92,16 @@
         // }));
 
         // // получение одного чата
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:get',
-        //     data: {
-        //         user_id: 1,
-        //         chat_id:27844,
-        //         page:3,
-        //         divider:1,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:get',
+            data: {
+                user_id: 1,
+                chat_id:18483,
+                page:1,
+                divider:1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+            }
+        }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',
@@ -124,7 +126,6 @@
         //     }
         //
         // }));
-
 
 
         // сделать сообщение прочитанным
@@ -173,6 +174,34 @@
         //     }
         //
         // }));
+
+        // проверяет есть ли пользователь в чате
+
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:members:check',
+        //     data: {
+        //         user_id: 1,
+        //         chat_id:18482,
+        //         member_id:118,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+        //
+         // добавляет пользователя в чат
+        //
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:members:add',
+        //     data: {
+        //         user_id: 113,
+        //         chat_id:18483,
+        //         members_id:'123,124,189,200',
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
+
 
 
 

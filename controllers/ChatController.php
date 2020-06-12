@@ -13,7 +13,6 @@ class ChatController
 {
     private $redis;
 
-
     public function __construct()
     {
         $this->redis = new Redis();
@@ -30,7 +29,6 @@ class ChatController
     const SUBSCRIBER = 1;
     const ADMIN = 2;
 
-
     const BANNED = -1;
 
 
@@ -40,6 +38,14 @@ class ChatController
             self::SUBSCRIBER,
             self::ADMIN,
             self::BANNED
+        ];
+    }
+
+    public static function getRolesForAdministrators()
+    {
+        return [
+            self::OWNER,
+            self::ADMIN,
         ];
     }
 
@@ -95,6 +101,8 @@ class ChatController
                     $this->redis->set("private:{$data['user_id']}:{$userId}", $chatId);
                 }
                 DB::table('chat_members')->insert($membersData);
+                $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "chat:message:create");
+                break;
             case self::GROUP:
                 foreach ($userIds as $userId) {
                     $role = $userId == $data['user_id'] ? self::OWNER : self::SUBSCRIBER;
@@ -107,7 +115,11 @@ class ChatController
                     $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
                 }
                 DB::table('chat_members')->insert($membersData);
+                $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "group:message:create");
+                break;
         }
+
+
 
         $data = [
             'status' => 'true',
@@ -116,7 +128,7 @@ class ChatController
             'chat_id' => $chatId,
 
         ];
-
+        $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat($userIds, $data);
 
 
@@ -134,7 +146,6 @@ class ChatController
 
         $userChatIds = $this->redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
 
-
         $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
 
         // нужно для сортировки,
@@ -143,7 +154,6 @@ class ChatController
         // получить user_id всех авторов последних сообщений и взять их аватарки и имена из базы
 
         $allUserIds = [];
-        $chatNumber = 0;
 
         foreach ($userChatIds as $userChatId) {
 
@@ -164,24 +174,8 @@ class ChatController
             $chat = $userChats->where('id', $userChatId)->first();
             $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
 
-
-
-
-            $lastMessage = null;
-            $lastMessageUserId = null;
-
-            if ($lastMessageId) {
-
-                $lastMessageDataCrutch = explode(':',array_values($lastMessageId)[0]);
-
-                if (count($lastMessageDataCrutch) >3) {
-                    $lastMessageId[0] = $lastMessageDataCrutch[0].':'.$lastMessageDataCrutch[1].':'.$lastMessageDataCrutch[4];
-                }
-
-
-                $lastMessage = $this->redis->hGetAll($lastMessageId[0]);
-                $lastMessageUserId = $lastMessage['user_id'];
-            }
+            $lastMessage = $this->redis->hGetAll($lastMessageId[0]);
+            $lastMessageUserId = $lastMessage['user_id'];
 
             if ($chat) {
                 $messageOwner = $lastMessage ? $users->where('id', $lastMessage['user_id'] ?? null)->first() : '';
@@ -192,23 +186,35 @@ class ChatController
                 $anotherUserId = array_shift($anotherUsers);
                 $crutchUserName = $this->redis->get("user:name:{$anotherUserId}") == false ? '' : $this->redis->get("user:name:{$anotherUserId}");
 
+                // @TODO отрекфакторить костыль
+
+                if ($chat->type == self::PRIVATE) {
+                    $checkAvatar = $this->redis->get("user:avatar:{$anotherUserId}");
+
+                    $chatAvatar = $checkAvatar == false ? 'noAvatar.png' : $checkAvatar;
+                } else {
+                    $chatAvatar = 'noAvatar.png';
+                }
+
+                $chatStartTime = $this->redis->zRange("chat:{$userChatId}",0,0,true);
+                $chatStartTime =(int)array_shift($chatStartTime);
                 $responseData[] = [
                     'id' => $userChatId,
-                    'avatar' => $this->redis->get("user:avatar:{$anotherUserId}") == false ? '' : $this->redis->get("user:avatar:{$anotherUserId}"),
+                    'avatar' => $chatAvatar,
                     'name' => $chat->type == self::PRIVATE ? $crutchUserName : $chat->name,
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
-                    'unread_messages' => $lastMessageUserId !=$data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) :0,
+                    'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
                     'phone' => strval($this->redis->get("user:phone:{$anotherUserId}")),
-                    'last_message' => $lastMessage == null ? new \stdClass() : [
+                    'another_user_id' => $anotherUserId ?? 0,
+                    'last_message' => [
                         'id' => array_values($lastMessageId)[0] ?? '',
                         'avatar' => $messageOwner->avatar ?? '',
                         'user_name' => $messageOwner->user_name ?? '',
                         'text' => $lastMessage['text'] ?? '',
-                        'time' => $lastMessage['time'] ?? '',
+                        'time' => $lastMessage['time'] == "" ? $chatStartTime : $lastMessage['time'],
                     ],
                 ];
-
 
             }
 
@@ -224,7 +230,6 @@ class ChatController
         $chatId = $data['chat_id'];
         $divider = $data['divider'] ?? null;
         $count = 20;
-        $responseData = [];
 
         $notifyUsers = $this->redis->zRange("chat:members:{$chatId}", 0, -1);
         array_diff($notifyUsers, [$data['user_id']]);
@@ -237,9 +242,9 @@ class ChatController
 
             $allMessages = [];
             $messagesForDivider = [];
-
             foreach ($chatMessagesId as $chatMessageId) {
-
+                $chatStartTime = $this->redis->zRange("chat:{$chatId}",0,0,true);
+                $chatStartTime =(int)array_shift($chatStartTime);
                 // делаю сообщения прочитанными
                 $messageOwner = $this->redis->hGet($chatMessageId, 'user_id');
                 $messageWriteStatus = $this->redis->hGet($chatMessageId, 'status');
@@ -247,12 +252,12 @@ class ChatController
 
                 if ($messageOwner != $data['user_id'] && $messageWriteStatus != MessageController::WRITE && $messageOwner) {
                     $this->redis->incrBy("chat:unwrite:count:{$chatId}", -1);
-                    $this->redis->hMSet($chatMessageId, 'status', MessageController::WRITE);
+                    $this->redis->hMSet($chatMessageId, ['status' => MessageController::WRITE]);
 
                 }
 
                 $message = $this->redis->hGetAll($chatMessageId);
-                if ($message){
+                if ($message) {
                     $allMessages[$chatMessageId] = [
                         'id' => $chatMessageId,
                         'user_id' => $message['user_id'],
@@ -261,8 +266,9 @@ class ChatController
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                         'text' => $message['text'],
                         'chat_id' => $message['chat_id'],
-                        'time' => $message['time'],
-                        'write' => $message['status']
+                        'time' => $message['time'] == '' ? $chatStartTime : $message['time'],
+                        'write' => $message['status'],
+                        'type' => $message['type'] ?? 0,
                     ];
                     $messagesForDivider[] = [
                         'id' => $chatMessageId,
@@ -270,13 +276,13 @@ class ChatController
                         'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                         'text' => $message['text'],
+                        'type' => $message['type'] ?? 0,
                         'chat_id' => $message['chat_id'],
                         'time' => $message['time'],
                         'day' => date('d-m-Y', $message['time']),
                         'hour' => date('H:i', $message['time']),
                     ];
                 }
-
 
 
             }
@@ -301,38 +307,46 @@ class ChatController
                 $responseDataWithDivider[] = $dividerData;
             }
             if ($divider) {
+                $this->redis->close();
                 return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseDataWithDivider);
             }
 
-
+            $this->redis->close();
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
 
         }
 
         $allMessages = DB::table('messages')
             ->orderBy('time', 'desc')
+            ->where('chat_id',$chatId)
             ->skip(($page * $count) - $count)
             ->take($count)
             ->get();
 
-        $writeCount = 0;
-        $unWriteMessageIds = [];
+        $writeCount = $allMessages->where('user_id','!=',$data['user_id'])->where('status',MessageController::NO_WRITE)->count();;
+
+
+        if ($allMessages->last()->user_id !== $data['user_id']) {
+             DB::table('messages')
+                ->orderBy('time', 'desc')
+                ->where('chat_id',$chatId)
+                ->skip(($page * $count) - $count)
+                ->update(['status' => MessageController::WRITE]);
+        }
+
+
 
         $messagesForDivider = [];
         foreach ($allMessages as $message) {
-            if ($message->status == MessageController::NO_WRITE && $data['user_id'] !=$message->user_id) {
-                ++$writeCount;
-                $unWriteMessageIds[] = $message->id;
-            }
-
             // возвращаю сообщения в корректном формате
             $messagesForDivider[] = [
                 'id' => strval($message->id),
-                'user_id' => $message->user_id,
+                'us                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    er_id' => $message->user_id,
                 'avatar' => $this->redis->get("user:avatar:{$message->user_id}"),
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
                 'text' => $message->text,
                 'chat_id' => $message->chat_id,
+                'type' => $message->type ?? 0,
                 'time' => $message->time,
                 'day' => Carbon::parse($message->time)->format('d-m-Y'),
                 'hour' => Carbon::parse($message->time)->format('H:i'),
@@ -359,21 +373,17 @@ class ChatController
 
         }
 
-        // отмечаю непрочитанные сообщения прочитанными и изменяю количество непрочитанных в redis
-        DB::table('messages')
-            ->whereIn('id',$unWriteMessageIds)
-            ->update(['status'=>MessageController::WRITE]);
+        $writeCount = $writeCount !=0 ? -1 * $writeCount : 0;
 
-        $writeCount = -1 * $writeCount;
-
-        $this->redis->incrBy("chat:unwrite:count:{$chatId}",$writeCount);
+        $this->redis->incrBy("chat:unwrite:count:{$chatId}", $writeCount);
         if ($divider) {
+            $this->redis->close();
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseDataWithDivider[0]);
         }
 
 
         $responseData = MessageHelper::getMessageIncorrectFormat($allMessages, $this->redis);
-
+        $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
     }
 

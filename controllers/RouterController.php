@@ -72,9 +72,15 @@ class RouterController
             'action' => 'MemberController@deleteMembers',
             'params' => true,
         ],
+        'chat:members:add' =>[
+            'action' => 'MemberController@addMembers',
+            'params' => true,
+        ],
 
-
-
+        'chat:members:check' =>[
+            'action' => 'MemberController@checkExists',
+            'params' => true,
+        ],
 
         //test
         'test:ping' => [

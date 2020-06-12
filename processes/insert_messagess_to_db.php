@@ -25,18 +25,15 @@ $capsule->setAsGlobal();
 while (true) {
 
     $redis = new Redis();
-    $redis->connect('127.0.0.1', 6379);
+    $redis->pconnect('127.0.0.1', 6379);
 
     $allMessages = $redis->zRange('all:messages', 0, -1);
-    $redis->close();
 
 
     $messagesToChunk = array_chunk($allMessages, 1000);
 
     foreach ($messagesToChunk as $oneChunkMessages) {
 
-        $redis = new Redis();
-        $redis->connect('127.0.0.1', 6379);
 
 
         $oneChunkInsertMessages = [];
@@ -61,7 +58,6 @@ while (true) {
             }
 
         }
-
         DB::table('messages')->insert($oneChunkInsertMessages);
 
         // удаляет сообщения из общей очереди redis также удаляет их hash table
@@ -100,7 +96,6 @@ while (true) {
 
 
     }
-    $redis->close();
 
 }
 

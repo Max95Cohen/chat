@@ -10,7 +10,7 @@ $server = new swoole_websocket_server("127.0.0.1", 9502);
 
 
 $capsule = new Illuminate\Database\Capsule\Manager();
-
+const MEDIA_URL = 'http://media.loc/';
 
 $capsule->addConnection([
     'driver' => 'mysql',

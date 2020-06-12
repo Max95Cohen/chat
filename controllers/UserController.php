@@ -30,7 +30,6 @@ class UserController
         $phone = PhoneHelper::replaceForSeven($phone);
 
         $checkExist = $this->redis->zRangeByScore('users:phones',$phone,$phone,['withscores' => true]);
-
         if (count($checkExist)) {
             $userId = array_key_first($checkExist);
             $avatar =$this->redis->get("user:avatar:{$data['user_id']}");
@@ -38,14 +37,15 @@ class UserController
             $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");
             $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userId}") : $chatId;
             $online = UserHelper::checkOnline($userId,$this->redis);
+            $name = $this->redis->get("user:name:{$userId}");
             $this->redis->close();
-
 
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
                 'status' => 'true',
                 'phone' =>strval($data['phone']),
                 'user_id' => $userId,
                 'avatar' =>$avatar,
+                'name' =>$name,
                 'avatar_url' => 'https://media.indigo24.com/avatars/',
                 'chat_id' =>$chatId,
                 'online' => $online
