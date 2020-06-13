@@ -34,6 +34,7 @@ class MessageController
         // у каждого юзера есть counter сообщений
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
+        $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
 
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");

@@ -53,6 +53,7 @@ class RouterController
         'message:create' => [
             'action' => 'MessageController@create',
             'params' => true,
+            'middleware' => ['CheckUserTokenMiddleware'],
         ],
         'message:write' => [
             'action' => 'MessageController@write',
@@ -110,7 +111,15 @@ class RouterController
             $controllerAndMethod = explode('@', $route['action']);
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
-//            return $params ? call_user_func([$controller, $method], $params) : call_user_func([$controller, $method]);
+//            $middlewars = $route['middleware'] ?? null;
+
+
+//            foreach ($middlewars as $middlewar) {
+//                $middlewareClass = 'Middlewars\\' . $middlewar;
+//                $middlewareAllow = $middlewareClass->handle($params);
+//
+//            }
+
             return  $params ? (new $controller)->$method($params) : (new $controller)->$method();
 
         }

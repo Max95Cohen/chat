@@ -47,6 +47,10 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
             'Prophecy\\' => 9,
             'Patterns\\' => 9,
         ),
+        'M' => 
+        array (
+            'Middlewars\\' => 11,
+        ),
         'I' => 
         array (
             'Illuminate\\Support\\' => 19,
@@ -133,6 +137,10 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         'Patterns\\' => 
         array (
             0 => __DIR__ . '/../..' . '/patterns',
+        ),
+        'Middlewars\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/middlewars',
         ),
         'Illuminate\\Support\\' => 
         array (

@@ -46,5 +46,17 @@ class UserHelper
 
     }
 
+    /**
+     * @param string $frontEndToken
+     * @param int $userId
+     * @param Redis $redis
+     * @return bool
+     */
+    public static function CheckUserToken(string $frontEndToken, int $userId, Redis $redis) :bool
+    {
+        return $redis->hGet("Customer:{$userId}",'unique') == $frontEndToken;
+    }
+
+
 
 }

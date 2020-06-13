@@ -15,7 +15,8 @@
         "psr-4": {
             "Controllers\\": "controllers",
             "Helpers\\": "helpers",
-            "Patterns\\": "patterns"
+            "Patterns\\": "patterns",
+            "Middlewars\\":"middlewars"
 
         }
     },
