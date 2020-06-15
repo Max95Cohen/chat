@@ -6,8 +6,8 @@ use Patterns\MessageFactory\Factory as MessageFactory;
 
 require __DIR__ . '/vendor/autoload.php';
 
-const MEDIA_DIR = __DIR__;
-const MEDIA_URL = 'http://media.loc/media/';
+const MEDIA_DIR = '/var/www/media.chat.indigo24/';
+const MEDIA_URL = 'https://media.chat.indigo24.xyz';
 
 
 $http = new Swoole\Http\Server("127.0.0.1", 9517);
@@ -28,10 +28,9 @@ $capsule->addConnection([
 $capsule->setAsGlobal();
 
 
-$mediaDir = __DIR__ . '/media/files';
 $mediaUrl = 'http://media.loc/files';
 
-$http->on('request', function ($request, $response) use ($mediaDir, $mediaUrl) {
+$http->on('request', function ($request, $response) {
 
     $mimeType = $request->files['file']['type'];
 
@@ -51,7 +50,13 @@ $http->on('request', function ($request, $response) use ($mediaDir, $mediaUrl) {
 
         $response->end(json_encode($responseData['data']));
 
-
+    }else{
+        $response->end(json_encode([
+            'status' => false,
+            'message' => 'не удалось загрузить файл неподходящее расширение'
+        ]));
     }
+
+
 });
 $http->start();

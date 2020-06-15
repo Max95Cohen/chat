@@ -24,7 +24,7 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
 
     public static function getMediaUrl()
     {
-        return MEDIA_URL . self::IMAGE_MEDIA_ULR;
+        return MEDIA_URL . self::IMAGE_MEDIA_ULR .'/';
     }
 
 
@@ -56,8 +56,9 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
      */
     public function upload(Request $request) :array
     {
-        $extension = MediaHelper::getExtensionByMimeType($request->files['file']['type']);
+//        $extension = MediaHelper::getExtensionByMimeType($request->files['file']['type']);
 
+        $extension = '.jpg';
         $fileName  = MediaHelper::generateFileName($extension);
         move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
 
@@ -85,8 +86,10 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
-        $redis->hSet('type','type',MessageHelper::IMAGE_MESSAGE_TYPE);
-        $redis->hSet($redisKey,'attachments',$data['attachments']);
+        $redis->hSet($redisKey,'type',MessageHelper::IMAGE_MESSAGE_TYPE);
+
+        var_dump(json_encode($data['attachments']));
+        $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
     /**
@@ -99,9 +102,12 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
     {
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
-        $messageData['attachments'] = $data['attachments'];
+        $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::IMAGE_MESSAGE_TYPE;
+        var_dump($messageData);
+        var_dump("SAD TEST MESS DATA");
+
         return $messageData;
     }
 

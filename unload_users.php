@@ -39,7 +39,7 @@ $redis->connect('127.0.0.1',6379);
 
 
 foreach ($users as $user) {
-//    $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
+    $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
     $redis->zAdd("users:phones", ['NX'],$phoneInCorrectFormat,$user->id);
 //    $redis->hSet($user->id,'token',$user->unic);
 //    $redis->zAdd("users:avatars", ['CX'],$user->id,$user->avatar);

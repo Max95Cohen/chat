@@ -4,6 +4,7 @@
 namespace Helpers;
 
 use Controllers\ChatController;
+use Patterns\MessageFactory\Factory;
 use Redis;
 
 class MessageHelper
@@ -13,6 +14,7 @@ class MessageHelper
     const IMAGE_MESSAGE_TYPE = 1;
     const DOCUMENT_MESSAGE_TYPE = 2;
     const VOICE_MESSAGE_TYPE = 3;
+    const VIDEO_MESSAGE_TYPE = 4;
     const SYSTEM_MESSAGE_TYPE = 7;
 
     const MESSAGE_NO_WRITE_STATUS = 0;
@@ -22,13 +24,28 @@ class MessageHelper
     {
         $responseData = [];
         foreach ($allMessages as $messageId => $message) {
-
+            $attachmentUrl = null;
             if (!is_array($message)) {
                 $message = (array)$message;
             }
 
             $avatar = $redis->get("user:avatar:{$message['user_id']}");
             $name = $redis->get("user:name:{$message['user_id']}");
+
+            if ($message['type'] == MessageHelper::IMAGE_MESSAGE_TYPE) {
+                $attachmentUrl = MEDIA_URL . '/images/';
+            }
+            if ($message['type'] == MessageHelper::VIDEO_MESSAGE_TYPE) {
+                $attachmentUrl = MEDIA_URL . '/video/';
+            }
+            if ($message['type'] == MessageHelper::VOICE_MESSAGE_TYPE) {
+                $attachmentUrl = MEDIA_URL . '/voice/';
+            }
+            if ($message['type'] == MessageHelper::DOCUMENT_MESSAGE_TYPE) {
+                $attachmentUrl = MEDIA_URL . '/documents/';
+            }
+
+
             $responseData[] = [
                 'id' => $message['id'],
                 'user_id' => $message['user_id'],
@@ -39,6 +56,8 @@ class MessageHelper
                 'time' => $message['time'],
                 'type' => $message['type'] ?? 0,
                 'write' => $message['write'] ?? '0',
+                'attachments' => $redis->hGet($messageId, 'attachments'),
+                'attachment_url' => $attachmentUrl,
             ];
         }
         return $responseData;
@@ -55,7 +74,7 @@ class MessageHelper
      * @param string $messageRedisKey
      * @return string
      */
-    public static function create(Redis $redis, array $data,string $messageRedisKey): string
+    public static function create(Redis $redis, array $data, string $messageRedisKey): string
     {
         $redis->hSet($messageRedisKey, 'user_id', $data['user_id']);
         $redis->hSet($messageRedisKey, 'chat_id', $data['chat_id']);
@@ -111,5 +130,25 @@ class MessageHelper
             'user_name' => $redis->get("user:name:{$data['user_id']}"),
         ];
     }
+
+
+    /**
+     * @param int $type
+     * @return string
+     */
+    public static function getAttachmentTypeString(int $type)
+    {
+        switch ($type) {
+            case self::IMAGE_MESSAGE_TYPE:
+                return "Изображение";
+            case self::DOCUMENT_MESSAGE_TYPE:
+                return "Документ";
+            case self::VOICE_MESSAGE_TYPE:
+                return "голосовое сообщение";
+            case self::VIDEO_MESSAGE_TYPE:
+                return "видео";
+        }
+    }
+
 
 }

@@ -19,7 +19,7 @@ class UserController
     public function __construct()
     {
         $this->redis = new \Redis();
-        $this->redis->connect('127.0.0.1',6379);
+        $this->redis->connect('127.0.0.1', 6379);
     }
 
 
@@ -29,32 +29,32 @@ class UserController
 
         $phone = PhoneHelper::replaceForSeven($phone);
 
-        $checkExist = $this->redis->zRangeByScore('users:phones',$phone,$phone,['withscores' => true]);
+        $checkExist = $this->redis->zRangeByScore('users:phones', $phone, $phone, ['withscores' => true]);
         if (count($checkExist)) {
             $userId = array_key_first($checkExist);
-            $avatar =$this->redis->get("user:avatar:{$data['user_id']}");
+            $avatar = $this->redis->get("user:avatar:{$data['user_id']}");
 
             $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");
             $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userId}") : $chatId;
-            $online = UserHelper::checkOnline($userId,$this->redis);
+            $online = UserHelper::checkOnline($userId, $this->redis);
             $name = $this->redis->get("user:name:{$userId}");
             $this->redis->close();
 
-            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
                 'status' => 'true',
-                'phone' =>strval($data['phone']),
+                'phone' => strval($data['phone']),
                 'user_id' => $userId,
-                'avatar' =>$avatar,
-                'name' =>$name,
+                'avatar' => $avatar,
+                'name' => $name,
                 'avatar_url' => 'https://media.indigo24.com/avatars/',
-                'chat_id' =>$chatId,
+                'chat_id' => $chatId,
                 'online' => $online
             ]);
         }
         $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             'status' => 'false',
-            'phone' =>$data['phone']
+            'phone' => $data['phone']
         ]);
 
     }
@@ -69,38 +69,49 @@ class UserController
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
 
-        $notifyUsers = $this->redis->zRange("chat:members:{$chatId}",0,-1);
+        $this->redis->set("user:taping:{$chatId}:{$userId}", 1, 4);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 100);
+        $tapingMembers = [];
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,[
-            'user_id' => $userId,
-            'writing' => '1',
-            'chat_id' => $chatId,
-        ]);
+        foreach ($chatMembers as $member) {
+
+            if ($this->redis->get("user:taping:{$chatId}:{$userId}")){
+                $tapingMembers[] = [
+                    'name' => $this->redis->get("user:name:{$member}") ?? '',
+                    'chat_id' => $chatId,
+                    'user_id' => $member,
+                    'typing' => 1
+                ];
+            }
+
+        }
+
+
+        $this->redis->close();
+        return ResponseFormatHelper::successResponseInCorrectFormat($chatMembers,$tapingMembers);
 
     }
 
     public function checkOnline(array $data)
     {
 
-        $usersIds = explode(',',$data['users_ids']);
+        $usersIds = explode(',', $data['users_ids']);
 
         $responseData = [];
         foreach ($usersIds as $userId) {
 
-            $online = UserHelper::checkOnline($userId,$this->redis);
+            $online = UserHelper::checkOnline($userId, $this->redis);
 
             $responseData[] = [
-              'user_id' => $userId,
-              'online' => $online
+                'user_id' => $userId,
+                'online' => $online
             ];
         }
         $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$responseData);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
 
 
     }
-
-
 
 
 }

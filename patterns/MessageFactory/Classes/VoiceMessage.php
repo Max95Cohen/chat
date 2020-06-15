@@ -14,7 +14,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
 {
 
     const VOICE_MEDIA_ULR = 'voice';
-    const VOICE_MEDIA_DIR = 'media/voice';
+    const VOICE_MEDIA_DIR = 'media/voice/';
 
     /**
      * @return string
@@ -63,8 +63,8 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
-        $redis->hSet('type','type',MessageHelper::VOICE_MESSAGE_TYPE);
-        $redis->hSet($redisKey,'attachments',$data['attachments']);
+        $redis->hSet($redisKey,'type',MessageHelper::VOICE_MESSAGE_TYPE);
+        $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
     /**
@@ -77,7 +77,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
     {
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
-        $messageData['attachments'] = $data['attachments'];
+        $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
         return $messageData;

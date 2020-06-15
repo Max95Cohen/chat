@@ -46,11 +46,13 @@ while (true) {
             if ($messageData) {
                 $oneChunkInsertMessages[] = [
                     'user_id' => intval($messageData['user_id']),
-                    'text' => $messageData['text'],
+                    'text' => $messageData['text'] ?? null,
                     'chat_id' => $messageData['chat_id'],
                     'status' => $messageData['status'],
                     'time' => intval($messageData['time']),
-                    'redis_id' => $message
+                    'redis_id' => $message,
+                    'attachments' => $messageData['attachments'] ?? '',
+                    'type' => $messageData['type'] ?? \Helpers\MessageHelper::TEXT_MESSAGE_TYPE,
                 ];
 
                 $oneChunkDeletedMessages[] = $message;

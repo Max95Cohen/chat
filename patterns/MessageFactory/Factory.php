@@ -6,6 +6,7 @@ use Helpers\MessageHelper;
 use Patterns\MessageFactory\Classes\DocumentMessage;
 use Patterns\MessageFactory\Classes\ImageMessage;
 use Patterns\MessageFactory\Classes\TextMessage;
+use Patterns\MessageFactory\Classes\VideoMessage;
 use Patterns\MessageFactory\Classes\VoiceMessage;
 
 
@@ -27,6 +28,9 @@ class Factory
 
             case MessageHelper::VOICE_MESSAGE_TYPE:
                 return new VoiceMessage();
+
+            case MessageHelper::VIDEO_MESSAGE_TYPE:
+                return new VideoMessage();
         }
 
 

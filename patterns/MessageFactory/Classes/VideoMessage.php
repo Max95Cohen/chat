@@ -6,30 +6,28 @@ namespace Patterns\MessageFactory\Classes;
 
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
-use Patterns\MessageFactory\Interfaces\MediaMessageInterface;
-use Patterns\MessageFactory\Interfaces\MessageInterface;
-use Redis;
 use Swoole\Http\Request;
 
-class DocumentMessage implements MessageInterface,MediaMessageInterface
+class VideoMessage
 {
+    const VIDEO_MEDIA_ULR = 'video';
+    const VIDEO_MEDIA_DIR = 'media/video/';
 
-    const DOCUMENT_MEDIA_ULR = 'media/documents';
-    const DOCUMENT_MEDIA_DIR = 'documents';
 
-    public function returnData(array $params): array
+    /**
+     * @return string
+     */
+    public static function getMediaDir() :string
     {
-        return [];
+        return MEDIA_DIR . '/' . self::VIDEO_MEDIA_DIR;
     }
 
-    public static function getMediaDir()
+    /**
+     * @return string
+     */
+    public static function getMediaUrl() :string
     {
-        return MEDIA_DIR . '/' . self::DOCUMENT_MEDIA_ULR;
-    }
-
-    public static function getMediaUrl()
-    {
-        return MEDIA_URL . self::DOCUMENT_MEDIA_DIR;
+        return MEDIA_URL . self::VIDEO_MEDIA_ULR;
     }
 
     /**
@@ -38,9 +36,9 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
      */
     public function upload(Request $request) :array
     {
-        $extension = MediaHelper::getExtensionByMimeType($request->files['file']['type']);
-        $fileName = MediaHelper::generateFileName($extension);
-        move_uploaded_file($request->files['file']['tmp_name'], self::getMediaDir() . "/{$fileName}");
+        $extension = '.mp4';
+        $fileName  = MediaHelper::generateFileName($extension);
+        move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
 
         return [
             'data' => [
@@ -50,6 +48,8 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
             ],
             'file_name' => $fileName
         ];
+
+
     }
 
     /**
@@ -59,7 +59,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
-        $redis->hSet($redisKey,'type',MessageHelper::DOCUMENT_MESSAGE_TYPE);
+        $redis->hSet($redisKey,'type',MessageHelper::VIDEO_MESSAGE_TYPE);
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
@@ -75,8 +75,11 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
-        $messageData['type'] = MessageHelper::DOCUMENT_MESSAGE_TYPE;
+        $messageData['type'] = MessageHelper::VIDEO_MESSAGE_TYPE;
         return $messageData;
     }
+
+
+
 
 }

@@ -31,6 +31,7 @@ class ChatController
 
     const BANNED = -1;
 
+    const CHAT_MEDIA_URL = '';
 
     public static function getRolesForOwner()
     {
@@ -198,6 +199,10 @@ class ChatController
 
                 $chatStartTime = $this->redis->zRange("chat:{$userChatId}",0,0,true);
                 $chatStartTime =(int)array_shift($chatStartTime);
+
+                $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
+                #$messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
+
                 $responseData[] = [
                     'id' => $userChatId,
                     'avatar' => $chatAvatar,
@@ -213,6 +218,8 @@ class ChatController
                         'user_name' => $messageOwner->user_name ?? '',
                         'text' => $lastMessage['text'] ?? '',
                         'time' => $lastMessage['time'] == "" ? $chatStartTime : $lastMessage['time'],
+                        'type' => $type,
+                        #'message_for_type' =>$messageForType,
                     ],
                 ];
 
@@ -257,6 +264,9 @@ class ChatController
                 }
 
                 $message = $this->redis->hGetAll($chatMessageId);
+                $attachments = $message['attachments'] ?? null;
+
+
                 if ($message) {
                     $allMessages[$chatMessageId] = [
                         'id' => $chatMessageId,
@@ -264,10 +274,11 @@ class ChatController
                         'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
                         'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
-                        'text' => $message['text'],
+                        'text' => $message['text'] ?? null,
                         'chat_id' => $message['chat_id'],
                         'time' => $message['time'] == '' ? $chatStartTime : $message['time'],
                         'write' => $message['status'],
+                        'attachments' => $attachments,
                         'type' => $message['type'] ?? 0,
                     ];
                     $messagesForDivider[] = [
@@ -275,12 +286,13 @@ class ChatController
                         'user_id' => $message['user_id'],
                         'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
-                        'text' => $message['text'],
+                        'text' => $message['text'] ?? null,
                         'type' => $message['type'] ?? 0,
                         'chat_id' => $message['chat_id'],
                         'time' => $message['time'],
-                        'day' => date('d-m-Y', $message['time']),
-                        'hour' => date('H:i', $message['time']),
+                        'attachments' => $attachments,
+                        'day' => date('d-m-Y', $message['time'] ?? 1),
+                        'hour' => date('H:i', $message['time'] ?? 1),
                     ];
                 }
 
@@ -337,19 +349,21 @@ class ChatController
 
 
         $messagesForDivider = [];
+        $attachments = $message['attachments'] ?? null;
         foreach ($allMessages as $message) {
             // возвращаю сообщения в корректном формате
             $messagesForDivider[] = [
                 'id' => strval($message->id),
-                'us                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    er_id' => $message->user_id,
+                'user_id' => $message->user_id,
                 'avatar' => $this->redis->get("user:avatar:{$message->user_id}"),
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
-                'text' => $message->text,
+                'text' => $message->text ?? null,
                 'chat_id' => $message->chat_id,
                 'type' => $message->type ?? 0,
                 'time' => $message->time,
                 'day' => Carbon::parse($message->time)->format('d-m-Y'),
                 'hour' => Carbon::parse($message->time)->format('H:i'),
+                'attachments' => $attachments,
             ];
             $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
 

@@ -112,12 +112,15 @@ class RouterController
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
 //            $middlewars = $route['middleware'] ?? null;
-
-
+//
+//
 //            foreach ($middlewars as $middlewar) {
 //                $middlewareClass = 'Middlewars\\' . $middlewar;
-//                $middlewareAllow = $middlewareClass->handle($params);
-//
+//                $middlewareResponse = $middlewareClass->handle($params);
+//                if ($middlewareClass->next !==false) {
+//                    continue;
+//                }
+//                return $middlewareResponse;
 //            }
 
             return  $params ? (new $controller)->$method($params) : (new $controller)->$method();
