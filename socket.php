@@ -48,7 +48,6 @@ $server->on('message', function ($server, $frame) {
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
-
     $notifyUsers = $responseData['notify_users'];
     $response = [];
     $response['cmd'] = $requestData['cmd'];

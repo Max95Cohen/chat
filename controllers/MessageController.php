@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
+use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
 use Redis;
 
@@ -34,10 +35,22 @@ class MessageController
         // у каждого юзера есть counter сообщений
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
-        $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
+
 
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");
+
+        // здесь добавляю в очередь на отправку уведомлений!!!!@TODO отрефакторить это
+
+        $this->redis->hSet("push:notify:{$userId}:{$messageId}",'type',PushController::NOTIFY_CREATE_NEW_MESSAGE_IN_CHAT);
+        $this->redis->hSet("push:notify:{$userId}:{$messageId}",'link',"message:$userId:$messageId");
+
+        $this->redis->zAdd("all:notify:queue",['NX'],time(),"push:notify:{$userId}:{$messageId}");
+
+        // здесь добавляю в очередь на отправку уведомлений!!!!
+
+
+        $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
 
         $messageRedisKey = "message:$userId:$messageId";
 
@@ -45,26 +58,26 @@ class MessageController
 
 
         // добаляем сообщение в redis
-        MessageHelper::create($this->redis,$data,$messageRedisKey);
+        MessageHelper::create($this->redis, $data, $messageRedisKey);
 
         // добавляем дополнительные параметры в зависимости от типа через фабрику
 
         $messageClass = Factory::getItem($data['message_type']);
 
-        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
+        $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
 
         // добавляем сообщение в чат
 
-        MessageHelper::addMessageInChat($this->redis,$chatId,$messageRedisKey);
+        MessageHelper::addMessageInChat($this->redis, $chatId, $messageRedisKey);
 
         // Если количество сообщений в чате больше чем AVAILABLE_COUNT_MESSAGES_IN_REDIS то самое раннее сообщение удаляется
 
-        MessageHelper::cleanFirstMessageInRedis($this->redis,$chatId);
+        MessageHelper::cleanFirstMessageInRedis($this->redis, $chatId);
 
 
         // добавляем сообщение в общий список сообщений
 
-        $this->redis->zAdd('all:messages', ['NX'],self::NO_WRITE, "message:$userId:$messageId");
+        $this->redis->zAdd('all:messages', ['NX'], self::NO_WRITE, "message:$userId:$messageId");
 
         // ставим последнее время для фильтрации чатов в списке пользователя
         $this->redis->zAdd("user:chats:{$userId}", ['NX'], $data['message_time'], $chatId);
@@ -77,7 +90,7 @@ class MessageController
         }
 
         return [
-            'data' => $messageClass->returnResponseDataForCreateMessage($data,$messageRedisKey,$this->redis),
+            'data' => $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis),
             'notify_users' => $notifyUsers,
         ];
 
@@ -92,7 +105,7 @@ class MessageController
         $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
         $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
 
-        $this->redis->incrBy("chat:unwrite:count:{$chatId}",-1);
+        $this->redis->incrBy("chat:unwrite:count:{$chatId}", -1);
         $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
 
         return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
@@ -101,6 +114,26 @@ class MessageController
             'owner_id' => $messageOwner,
             'write' => strval(MessageController::WRITE),
         ]);
+
+
+    }
+
+    public function edit(array $data)
+    {
+        $messageId = $data['message_id'];
+        // 1 нужно понять где лежит сообщени в redis или mysql
+
+        $checkMysql = preg_match("^[0-9]{1,40}$", $data['message_id']);
+        if ($checkMysql) {
+            Manager::table('messages')->where('id', $messageId)->update([
+                'text' => $data['text'],
+                'attachments' => $data['attachments'],
+                'edited_time' => time(),
+                'status' => MessageHelper::MESSAGE_EDITED_STATUS,
+            ]);
+        }else{
+
+        }
 
 
     }

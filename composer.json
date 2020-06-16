@@ -9,7 +9,10 @@
     "require": {
         "ext-redis": "*",
         "illuminate/database": "^7.12",
-        "nesbot/carbon": "^2.35"
+        "nesbot/carbon": "^2.35",
+        "intervention/image": "^2.5",
+        "gumlet/php-image-resize": "^1.9",
+        "kreait/firebase-php": "^5.4"
     },
     "autoload": {
         "psr-4": {
@@ -17,7 +20,6 @@
             "Helpers\\": "helpers",
             "Patterns\\": "patterns",
             "Middlewars\\":"middlewars"
-
         }
     },
     "require-dev": {

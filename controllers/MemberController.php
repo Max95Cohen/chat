@@ -38,6 +38,7 @@ class MemberController
                 'user_id' => $memberId,
                 'chat_id' => $chatId,
                 'avatar' => $this->redis->get("user:avatar:$memberId"),
+                'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:$memberId"),
                 'online' => $online,
                 'role' => strval($role)

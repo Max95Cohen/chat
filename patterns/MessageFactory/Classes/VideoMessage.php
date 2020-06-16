@@ -6,11 +6,13 @@ namespace Patterns\MessageFactory\Classes;
 
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
+use Illuminate\Support\Str;
+use Redis;
 use Swoole\Http\Request;
 
 class VideoMessage
 {
-    const VIDEO_MEDIA_ULR = 'video';
+    const VIDEO_MEDIA_ULR = 'video/';
     const VIDEO_MEDIA_DIR = 'media/video/';
 
 
@@ -37,8 +39,17 @@ class VideoMessage
     public function upload(Request $request) :array
     {
         $extension = '.mp4';
-        $fileName  = MediaHelper::generateFileName($extension);
-        move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
+        $fileName  = Str::random(rand(30,35)).$extension;
+        $filePath = self::getMediaDir() . "/{$fileName}";
+//        $resizeFileName = self::getMediaDir() . "/{$fileName}_200x200".$extension;
+
+        move_uploaded_file( $request->files['file']['tmp_name'],$filePath);
+
+//        $command = "usr/local/bin/ffmpeg -i {$filePath} -b:v 350K -bufsize 350K {$resizeFileName}";
+
+
+        // @TODO пока сжатие прям здесь потом перенести
+
 
         return [
             'data' => [

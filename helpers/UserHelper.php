@@ -58,5 +58,12 @@ class UserHelper
     }
 
 
+    public static function CheckUserInChatMembers(int $userId,int $chatId,Redis $redis)
+    {
+        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",0,'+inf');
+
+        return in_array($userId,$chatMembers);
+    }
+
 
 }

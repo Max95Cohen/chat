@@ -201,7 +201,7 @@ class ChatController
                 $chatStartTime =(int)array_shift($chatStartTime);
 
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
-                #$messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
+                $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
 
                 $responseData[] = [
                     'id' => $userChatId,
@@ -212,6 +212,7 @@ class ChatController
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
                     'phone' => strval($this->redis->get("user:phone:{$anotherUserId}")),
                     'another_user_id' => $anotherUserId ?? 0,
+                    'avatar_url' => MessageHelper::AVATAR_URL,
                     'last_message' => [
                         'id' => array_values($lastMessageId)[0] ?? '',
                         'avatar' => $messageOwner->avatar ?? '',
@@ -219,7 +220,7 @@ class ChatController
                         'text' => $lastMessage['text'] ?? '',
                         'time' => $lastMessage['time'] == "" ? $chatStartTime : $lastMessage['time'],
                         'type' => $type,
-                        #'message_for_type' =>$messageForType,
+                        'message_for_type' =>$messageForType,
                     ],
                 ];
 
@@ -272,7 +273,7 @@ class ChatController
                         'id' => $chatMessageId,
                         'user_id' => $message['user_id'],
                         'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
-                        'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
+                        'avatar_url' => MessageHelper::AVATAR_URL,
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                         'text' => $message['text'] ?? null,
                         'chat_id' => $message['chat_id'],
@@ -285,6 +286,7 @@ class ChatController
                         'id' => $chatMessageId,
                         'user_id' => $message['user_id'],
                         'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
+                        'avatar_url' => MessageHelper::AVATAR_URL,
                         'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                         'text' => $message['text'] ?? null,
                         'type' => $message['type'] ?? 0,
@@ -356,6 +358,7 @@ class ChatController
                 'id' => strval($message->id),
                 'user_id' => $message->user_id,
                 'avatar' => $this->redis->get("user:avatar:{$message->user_id}"),
+                'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
                 'text' => $message->text ?? null,
                 'chat_id' => $message->chat_id,

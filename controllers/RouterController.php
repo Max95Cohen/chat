@@ -11,6 +11,7 @@ class RouterController
         'init' => [
             'action' => 'AuthController@init',
             'params' => true,
+            'middleware' => ['\Auth\CheckUserTokenMiddleware'],
         ],
 
         'user:check' => [
@@ -53,7 +54,8 @@ class RouterController
         'message:create' => [
             'action' => 'MessageController@create',
             'params' => true,
-            'middleware' => ['CheckUserTokenMiddleware'],
+            //@TODO передать через ::class
+            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckUserInChatMembersMiddleware'],
         ],
         'message:write' => [
             'action' => 'MessageController@write',
@@ -111,17 +113,20 @@ class RouterController
             $controllerAndMethod = explode('@', $route['action']);
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
-//            $middlewars = $route['middleware'] ?? null;
-//
-//
-//            foreach ($middlewars as $middlewar) {
-//                $middlewareClass = 'Middlewars\\' . $middlewar;
-//                $middlewareResponse = $middlewareClass->handle($params);
-//                if ($middlewareClass->next !==false) {
-//                    continue;
-//                }
-//                return $middlewareResponse;
-//            }
+            $middlewars = $route['middleware'] ?? null;
+
+            if (is_array($middlewars)) {
+                foreach ($middlewars as $middlewar) {
+                    $middlewareNamespace = 'Middlewars' . $middlewar;
+                    $middlewareClass = new $middlewareNamespace;
+                    $middlewareResponse = $middlewareClass->handle($params);
+
+                    if ($middlewareClass->isNext() !==false) {
+                        continue;
+                    }
+                    return $middlewareResponse;
+                }
+            }
 
             return  $params ? (new $controller)->$method($params) : (new $controller)->$method();
 

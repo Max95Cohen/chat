@@ -38,7 +38,9 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
      */
     public function upload(Request $request) :array
     {
-        $extension = MediaHelper::getExtensionByMimeType($request->files['file']['type']);
+        $mimeType = mime_content_type($request->files['file']['tmp_name']);
+
+        $extension = MediaHelper::getExtensionByMimeType($mimeType);
         $fileName = MediaHelper::generateFileName($extension);
         move_uploaded_file($request->files['file']['tmp_name'], self::getMediaDir() . "/{$fileName}");
 

@@ -42,11 +42,10 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         $extension = '.mp3';
         $fileName  = MediaHelper::generateFileName($extension);
         move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
-
         return [
             'data' => [
                 'status' => true,
-                'media_url' => self::getMediaUrl(),
+                'media_url' => self::getMediaUrl() .'/',
                 'file_name' => $fileName,
             ],
             'file_name' => $fileName
@@ -78,7 +77,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
-        $messageData['attachment_url'] = self::getMediaUrl();
+        $messageData['attachment_url'] = self::getMediaUrl() .'/';
         $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
         return $messageData;
     }

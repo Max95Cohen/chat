@@ -19,6 +19,10 @@ class MessageHelper
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
+    const MESSAGE_EDITED_STATUS = 2;
+
+    const AVATAR_URL = 'https://indigo24.xyz/uploads/avatars/';
+
 
     public static function getMessageIncorrectFormat($allMessages, Redis $redis)
     {
@@ -51,7 +55,7 @@ class MessageHelper
                 'user_id' => $message['user_id'],
                 'user_name' => $name,
                 'avatar' => $avatar,
-                'avatar_url' => 'https://media.indigo24.com/avatars/',
+                'avatar_url' => self::AVATAR_URL,
                 'text' => $message['text'],
                 'time' => $message['time'],
                 'type' => $message['type'] ?? 0,
@@ -127,6 +131,7 @@ class MessageHelper
             'user_id' => $data['user_id'],
             'time' => $data['message_time'],
             'avatar' => $redis->get("user:avatar:{$data['user_id']}"),
+            'avatar_url' => self::AVATAR_URL,
             'user_name' => $redis->get("user:name:{$data['user_id']}"),
         ];
     }
@@ -144,7 +149,7 @@ class MessageHelper
             case self::DOCUMENT_MESSAGE_TYPE:
                 return "Документ";
             case self::VOICE_MESSAGE_TYPE:
-                return "голосовое сообщение";
+                return "Голосовое сообщение";
             case self::VIDEO_MESSAGE_TYPE:
                 return "видео";
         }

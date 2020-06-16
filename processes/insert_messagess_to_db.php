@@ -34,13 +34,12 @@ while (true) {
 
     foreach ($messagesToChunk as $oneChunkMessages) {
 
-
-
         $oneChunkInsertMessages = [];
         $oneChunkDeletedMessages = [];
 
         // собирает массив для записи  в mysql
         foreach ($oneChunkMessages as $message) {
+
             $messageData = $redis->hGetAll($message);
 
             if ($messageData) {

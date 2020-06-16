@@ -3,8 +3,10 @@
 namespace Patterns\MessageFactory\Classes;
 
 use Controllers\MessageController;
+use Gumlet\ImageResize;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
+use Illuminate\Support\Str;
 use Patterns\MessageFactory\Interfaces\MediaMessageInterface;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
 use Redis;
@@ -56,17 +58,29 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
      */
     public function upload(Request $request) :array
     {
-//        $extension = MediaHelper::getExtensionByMimeType($request->files['file']['type']);
 
         $extension = '.jpg';
-        $fileName  = MediaHelper::generateFileName($extension);
-        move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
+        $fileName  = Str::random(rand(30,35));
+
+        $fullSizeFileName = $fileName . $extension;
+        $resizeFileName = $fileName ."_200x200".$extension;
+
+
+        $filePath = self::getMediaDir() . "/{$fullSizeFileName}";
+
+        move_uploaded_file($request->files['file']['tmp_name'],$filePath);
+
+
+        $image = new ImageResize($filePath);
+        $image->crop(200,200,true,ImageResize::CROPCENTER);
+        $image->save(self::getMediaDir() ."/{$resizeFileName}");
 
         return [
             'data' => [
                 'status' => true,
                 'media_url' => self::getMediaUrl(),
-                'file_name' => $fileName,
+                'file_name' => $fullSizeFileName,
+                'resize_file_name' => $resizeFileName,
             ],
             'file_name' => $fileName
         ];
@@ -105,8 +119,6 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::IMAGE_MESSAGE_TYPE;
-        var_dump($messageData);
-        var_dump("SAD TEST MESS DATA");
 
         return $messageData;
     }

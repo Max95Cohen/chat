@@ -17,13 +17,19 @@ class MediaHelper
     {
         return [
             'images/gif',
+            'image/gif',
             'images/jpeg',
+            'image/jpeg',
             'images/png',
+            'image/png',
             'application/x-shockwave-flash',
             'images/psd',
+            'image/psd',
             'images/tiff',
+            'image/tiff',
             'application/octet-stream',
             'images/jp2',
+            'image/jp2',
             'images/iff',
             'images/vnd.wap.wbmp',
             'images/xbm',
@@ -35,6 +41,7 @@ class MediaHelper
             'video/x-msvideo',
             'application/vnd.amazon.ebook',
             'images/bmp',
+            'image/bmp',
             'application/x-bzip',
             'application/x-bzip2',
             'text/css',
@@ -133,5 +140,11 @@ class MediaHelper
     {
         return Str::random(rand(30, 35)) . $extension;
     }
+
+    public static function generateFileNameForSmallImage(string $extension,int $size = 200)
+    {
+        return Str::random(rand(30,35)) ."_{$size}x{$size}". $extension;
+    }
+
 
 }

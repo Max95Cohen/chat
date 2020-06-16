@@ -1,6 +1,7 @@
 <?php
 
 use Helpers\MediaHelper;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Str;
 use Patterns\MessageFactory\Factory as MessageFactory;
 
@@ -32,10 +33,9 @@ $mediaUrl = 'http://media.loc/files';
 
 $http->on('request', function ($request, $response) {
 
-    $mimeType = $request->files['file']['type'];
+    $mimeType = mime_content_type($request->files['file']['tmp_name']);
 
     if (MediaHelper::checkAllowedMimeType($mimeType)) {
-
         $responseData = MessageFactory::getItem($request->post['type'])->upload($request);
 
         // сохраняю в истории загрузок пользователя
