@@ -20,7 +20,7 @@
     var user_id = 40;
     var chat_id =12;
     var userToken ='5e2a0557ef07f2ef0c4521ed3541b6512055fa52';
-
+    var message_id = "message:1:272";
 
     //908102
     socket.addEventListener('open', function (event) {
@@ -72,19 +72,30 @@
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
         //
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:create',
+        //     data: {
+        //         user_id:user_id,
+        //         userToken: userToken,
+        //         chat_id:chat_id,
+        //         message_type:3,
+        //         text:"sad message",
+        //         attachments:images,
+        //     }
+        //
+        // }));
+        //message:deleted:all
+
         socket.send(JSON.stringify({
-            cmd: 'message:create',
+            cmd: 'message:deleted:all',
             data: {
                 user_id:user_id,
                 userToken: userToken,
                 chat_id:chat_id,
-                message_type:3,
-                text:"sad message",
-                attachments:images,
+                message_id:message_id,
             }
 
         }));
-
         // получение всех чатов с пагинацией
         // socket.send(JSON.stringify({
         //     cmd: 'chats:get',

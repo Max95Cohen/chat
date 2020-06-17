@@ -100,6 +100,26 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         ];
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function deleteMessage(array $data, Redis $redis) :array
+    {
+        MessageHelper::deleteMessageInRedis($data,$redis);
+        MessageHelper::deleteMessageInMysql($data);
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_DELETED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'user_id' => $data['user_id'],
+        ];
+
+    }
+
+
 
 
 }

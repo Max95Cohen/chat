@@ -21,6 +21,7 @@ class MessageHelper
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
     const MESSAGE_EDITED_STATUS = 2;
+    const MESSAGE_DELETED_STATUS = -1;
 
     const AVATAR_URL = 'https://indigo24.xyz/uploads/avatars/';
 
@@ -157,33 +158,61 @@ class MessageHelper
     }
 
     /**
-     * @param $data
+     * @param array $data
      * @param Redis $redis
      */
-    public static function editInRedis($data, Redis $redis) :void
+    public static function editInRedis(array $data, Redis $redis): void
     {
         $checkExistInRedis = $redis->hGetAll($data['message_id']);
 
         if ($checkExistInRedis) {
-            $redis->hMSet($data['message_id'],['text' => $data['text']]);
-            $redis->hMSet($data['edited'],self::MESSAGE_EDITED_STATUS);
+            $redis->hMSet($data['message_id'], ['text' => $data['text']]);
+            $redis->hMSet($data['edited'], self::MESSAGE_EDITED_STATUS);
         }
 
     }
 
     /**
-     * @param $data
+     * @param array $data
      */
-    public static function editInMysql($data) :void
+    public static function editInMysql(array $data): void
     {
         Manager::table('messages')
-            ->where('redis_id',$data['message_id'])
-            ->orWhere('id',$data['message_id'])
+            ->where('redis_id', $data['message_id'])
+            ->orWhere('id', $data['message_id'])
             ->update([
                 'text' => $data['text'],
                 'status' => self::MESSAGE_EDITED_STATUS,
             ]);
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     */
+    public static function deleteMessageInRedis(array $data, Redis $redis): void
+    {
+        $redis->hMSet($data['message_id'], ['status' => self::MESSAGE_DELETED_STATUS]);
+    }
+
+    /**
+     * @param array $data
+     */
+    public static function deleteMessageInMysql(array $data) :void
+    {
+        $sql = Manager::table('messages');
+        $messageId = intval($data['message_id']);
+
+        if ($messageId !== 0) {
+            $sql->where('id', $data['message_id']);
+
+        } else {
+            $sql->orWhere('redis_id', $data['message_id']);
+        }
+
+        $sql->update([
+                'status' => self::MESSAGE_DELETED_STATUS,
+            ]);
+    }
 
 }

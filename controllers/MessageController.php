@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Helpers\ChatHelper;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
@@ -117,13 +118,55 @@ class MessageController
 
     }
 
-    public function edit(array $data)
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function edit(array $data) :array
     {
-        $messageId = $data['message_id'];
+        $data = Factory::getItem($data['message_type'])->editMessage($data,$this->redis);
+        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
+        $this->redis->close();
 
-        $messageClass = Factory::getItem($data['message_type']);
-        $messageClass->editMessage($data,$this->redis);
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function delete(array $data) :array
+    {
+        $checkRedis = $this->redis->hGet($data['message_id'],'type');
+
+        $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
+
+        $data =  Factory::getItem($messageType)->deleteMessage($data,$this->redis);
+
+        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
+        $this->redis->close();
+
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
 
     }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function deleteOne(array $data) :array
+    {
+        $checkRedis = $this->redis->hGet($data['message_id'],'type');
+
+        $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
+
+        $data = Factory::getItem($messageType)->deleteOne($data,$this->redis);
+        $notifyUsers = ChatHelper::getChatMembers($data['chat_id'],$this->redis);
+
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
+
+    }
+
+
 
 }

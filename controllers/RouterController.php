@@ -66,6 +66,15 @@ class RouterController
             'params' => true,
         ],
 
+        'message:deleted:all' => [
+            'action' => 'MessageController@delete',
+            'params' => true,
+        ],
+        'message:delete:one' =>[
+            'action' => 'MessageController@deleteOne',
+            'params' => true,
+        ],
+
         // memberController
 
         'chat:members' => [
