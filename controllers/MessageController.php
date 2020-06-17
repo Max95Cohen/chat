@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager;
@@ -39,15 +40,6 @@ class MessageController
 
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");
-
-        // здесь добавляю в очередь на отправку уведомлений!!!!@TODO отрефакторить это
-
-        $this->redis->hSet("push:notify:{$userId}:{$messageId}",'type',PushController::NOTIFY_CREATE_NEW_MESSAGE_IN_CHAT);
-        $this->redis->hSet("push:notify:{$userId}:{$messageId}",'link',"message:$userId:$messageId");
-
-        $this->redis->zAdd("all:notify:queue",['NX'],time(),"push:notify:{$userId}:{$messageId}");
-
-        // здесь добавляю в очередь на отправку уведомлений!!!!
 
 
         $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
@@ -89,6 +81,13 @@ class MessageController
             $this->redis->zAdd("user:chats:{$notifyUser}", ['XX'], $data['message_time'], $chatId);
         }
 
+        // здесь добавляю в очередь на отправку уведомлений!!!!@TODO отрефакторить это
+
+        $this->redis->hSet("push:notify:{$userId}:{$messageId}", 'type', PushController::NOTIFY_CREATE_NEW_MESSAGE_IN_CHAT);
+        $this->redis->hSet("push:notify:{$userId}:{$messageId}", 'link', "message:$userId:$messageId");
+
+        $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:{$userId}:{$messageId}");
+
         return [
             'data' => $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis),
             'notify_users' => $notifyUsers,
@@ -121,22 +120,10 @@ class MessageController
     public function edit(array $data)
     {
         $messageId = $data['message_id'];
-        // 1 нужно понять где лежит сообщени в redis или mysql
 
-        $checkMysql = preg_match("^[0-9]{1,40}$", $data['message_id']);
-        if ($checkMysql) {
-            Manager::table('messages')->where('id', $messageId)->update([
-                'text' => $data['text'],
-                'attachments' => $data['attachments'],
-                'edited_time' => time(),
-                'status' => MessageHelper::MESSAGE_EDITED_STATUS,
-            ]);
-        }else{
-
-        }
-
+        $messageClass = Factory::getItem($data['message_type']);
+        $messageClass->editMessage($data,$this->redis);
 
     }
-
 
 }

@@ -4,6 +4,7 @@
 namespace Helpers;
 
 use Controllers\ChatController;
+use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
 use Redis;
 
@@ -153,6 +154,35 @@ class MessageHelper
             case self::VIDEO_MESSAGE_TYPE:
                 return "видео";
         }
+    }
+
+    /**
+     * @param $data
+     * @param Redis $redis
+     */
+    public static function editInRedis($data, Redis $redis) :void
+    {
+        $checkExistInRedis = $redis->hGetAll($data['message_id']);
+
+        if ($checkExistInRedis) {
+            $redis->hMSet($data['message_id'],['text' => $data['text']]);
+            $redis->hMSet($data['edited'],self::MESSAGE_EDITED_STATUS);
+        }
+
+    }
+
+    /**
+     * @param $data
+     */
+    public static function editInMysql($data) :void
+    {
+        Manager::table('messages')
+            ->where('redis_id',$data['message_id'])
+            ->orWhere('id',$data['message_id'])
+            ->update([
+                'text' => $data['text'],
+                'status' => self::MESSAGE_EDITED_STATUS,
+            ]);
     }
 
 

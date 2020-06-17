@@ -6,6 +6,7 @@ namespace Helpers;
 
 use Illuminate\Database\Capsule\Manager;
 use Illuminate\Support\Str;
+use Redis;
 
 class MediaHelper
 {
@@ -32,6 +33,7 @@ class MediaHelper
             'image/jp2',
             'images/iff',
             'images/vnd.wap.wbmp',
+            'application/pdf',
             'images/xbm',
             'images/vnd.microsoft.icon',
             'images/webp',
@@ -136,15 +138,50 @@ class MediaHelper
 
     }
 
+    /**
+     * @param string $extension
+     * @return string
+     */
     public static function generateFileName(string $extension)
     {
         return Str::random(rand(30, 35)) . $extension;
     }
 
-    public static function generateFileNameForSmallImage(string $extension,int $size = 200)
+    /**
+     * @param string $extension
+     * @param int $size
+     * @return string
+     */
+    public static function generateFileNameForSmallImage(string $extension, int $size = 200)
     {
         return Str::random(rand(30,35)) ."_{$size}x{$size}". $extension;
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     */
+    public static function messageEditInRedis(array $data, Redis $redis) :void
+    {
+        $checkMessageInRedis = $redis->hGetAll($data['message_id']);
+        if ($checkMessageInRedis) {
+            $redis->hMSet($data['message_id'],'attachments',$data['attachments']);
+            $redis->hMSet($data['message_id'],'status',MessageHelper::MESSAGE_EDITED_STATUS);
+        }
+
+    }
+
+    /**
+     * @param array $data
+     * @param $sql
+     */
+    public static function messageEditInMysql(array $data, $sql) :void
+    {
+        $sql->update([
+            'attachments' => $data['attachments'],
+            'edited_time' => time(),
+            'status' => MessageHelper::MESSAGE_EDITED_STATUS,
+        ]);
+    }
 
 }

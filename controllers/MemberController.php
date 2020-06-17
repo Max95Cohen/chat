@@ -118,6 +118,7 @@ class MemberController
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 3, ['withscores' => true]);
         $userRole = (int)$chatMembers[$userId] ?? 'not allowed';
 
+        // @TODO вынести в отдельный middleware
         $checkAdmin = in_array($userRole, ChatController::getRolesForAdministrators());
 
         if ($checkAdmin) {
@@ -129,7 +130,7 @@ class MemberController
                     // тут создается стандартное сообщение о том что пользователь добавлен в группу
                     $memberName = $this->redis->get("user:name:{$memberId}");
 
-
+                    //@TODO вынести в хелпер
                     $this->redis->hSet("user:add:chat:{$memberId}:{$chatId}", 'user_id', 13);
                     $this->redis->hSet("user:add:chat:{$memberId}:{$chatId}", 'chat_id', $chatId);
                     $this->redis->hSet("user:add:chat:{$memberId}:{$chatId}", 'status', 1);

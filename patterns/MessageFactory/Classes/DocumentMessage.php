@@ -81,4 +81,25 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         return $messageData;
     }
 
+    /**
+     * @param $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function editMessage($data, Redis $redis)
+    {
+        MediaHelper::editInRedis($data, $redis);
+        MediaHelper::editInMysql($data);
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_EDITED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'attachments' => $data['attachments'],
+            'user_id' => $data['user_id']
+        ];
+    }
+
+
+
 }

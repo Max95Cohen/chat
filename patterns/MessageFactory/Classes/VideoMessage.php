@@ -39,14 +39,15 @@ class VideoMessage
     public function upload(Request $request) :array
     {
         $extension = '.mp4';
-        $fileName  = Str::random(rand(30,35)).$extension;
-        $filePath = self::getMediaDir() . "/{$fileName}";
-//        $resizeFileName = self::getMediaDir() . "/{$fileName}_200x200".$extension;
+        $fileName = Str::random(rand(30,35));
+        $fileNameWithExtension  = $fileName.$extension;
+        $filePath = self::getMediaDir() . "/{$fileNameWithExtension}";
+        $resizeFileName = "{$fileName}_360p_$extension";
 
-        move_uploaded_file( $request->files['file']['tmp_name'],$filePath);
+        move_uploaded_file($request->files['file']['tmp_name'],$filePath);
+//        $command = "/usr/bin/ffmpeg -i {$filePath} -b:v 350K -bufsize 350K /var/www/media.chat.indigo24/media/video/{$resizeFileName}";
 
-//        $command = "usr/local/bin/ffmpeg -i {$filePath} -b:v 350K -bufsize 350K {$resizeFileName}";
-
+//        system($command);
 
         // @TODO пока сжатие прям здесь потом перенести
 
@@ -55,7 +56,8 @@ class VideoMessage
             'data' => [
                 'status' => true,
                 'media_url' => self::getMediaUrl(),
-                'file_name' => $fileName,
+                'file_name' => $fileNameWithExtension,
+//                'resize_file_names' => $resizeFileName,
             ],
             'file_name' => $fileName
         ];
@@ -90,7 +92,23 @@ class VideoMessage
         return $messageData;
     }
 
-
-
+    /**
+     * @param $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function editMessage($data, Redis $redis)
+    {
+        MediaHelper::editInRedis($data, $redis);
+        MediaHelper::editInMysql($data);
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_EDITED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'attachments' => $data['attachments'],
+            'user_id' => $data['user_id']
+        ];
+    }
 
 }

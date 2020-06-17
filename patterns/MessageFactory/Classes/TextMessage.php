@@ -32,11 +32,29 @@ class TextMessage implements MessageInterface
      */
     public function returnResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
-        $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
+        $messageData = MessageHelper::getResponseDataForCreateMessage($data, $messageRedisKey, $redis);
 
         $messageData['text'] = $data['text'];
         $messageData['type'] = MessageHelper::TEXT_MESSAGE_TYPE;
         return $messageData;
+    }
+
+    /**
+     * @param array $data
+     * @param Redis $redis
+     */
+    public function editMessage(array $data, Redis $redis): array
+    {
+        MessageHelper::editInRedis($data, $redis);
+        MessageHelper::editInMysql($data);
+
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_EDITED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'text' => $data['text'],
+            'user_id' => $data['user_id']
+        ];
     }
 
 

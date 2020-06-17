@@ -3,6 +3,7 @@
 
 namespace Helpers;
 use Carbon\Carbon;
+use Controllers\ChatController;
 use Controllers\UserController;
 use Redis;
 
@@ -58,11 +59,33 @@ class UserHelper
     }
 
 
-    public static function CheckUserInChatMembers(int $userId,int $chatId,Redis $redis)
+    /**
+     * @param int $userId
+     * @param int $chatId
+     * @param Redis $redis
+     * @return bool
+     */
+    public static function CheckUserInChatMembers(int $userId, int $chatId, Redis $redis)
     {
         $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",0,'+inf');
 
         return in_array($userId,$chatMembers);
+    }
+
+
+    /**
+     * @param int $userId
+     * @param int $chatId
+     * @param Redis $redis
+     * @return bool
+     */
+    public static function checkPrivilegesForAdminAndOwner(int $userId, int $chatId, Redis $redis)
+    {
+        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",ChatController::OWNER,'+inf',['withscores' => true]);
+        $userRole = !is_null($chatMembers[$userId]) ? intval($chatMembers[$userId]) : null;
+
+        return in_array($userRole,ChatController::getRolesForAdministrators());
+
     }
 
 

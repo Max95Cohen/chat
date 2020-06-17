@@ -61,6 +61,11 @@ class RouterController
             'action' => 'MessageController@write',
             'params' => true,
         ],
+        'message:edit' => [
+            'action' => 'MessageController@edit',
+            'params' => true,
+        ],
+
         // memberController
 
         'chat:members' => [
@@ -78,6 +83,7 @@ class RouterController
         'chat:members:add' =>[
             'action' => 'MemberController@addMembers',
             'params' => true,
+            'middleware' => ['\Permission\CheckPrivilegesForAddGroupChat']
         ],
 
         'chat:members:check' =>[
