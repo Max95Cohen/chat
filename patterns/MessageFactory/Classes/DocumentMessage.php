@@ -108,13 +108,44 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
     public function deleteMessage(array $data, Redis $redis) :array
     {
         MessageHelper::deleteMessageInRedis($data,$redis);
-        MessageHelper::deleteMessageInMysql($data);
+        MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_STATUS);
         //@TODO тут будет логика для удаления старых файлов и.т.д
         return [
             'message_id' => $data['message_id'],
             'status' => MessageHelper::MESSAGE_DELETED_STATUS,
             'chat_id' => $data['chat_id'],
             'user_id' => $data['user_id'],
+        ];
+
+    }
+
+
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function deleteOne(array $data, Redis $redis) :array
+    {
+        $messageId = $data['message_id'];
+
+        $checkInRedis = $redis->exists($messageId);
+
+        if ($checkInRedis) {
+            $redis->hMSet($messageId,['status' => MessageHelper::MESSAGE_DELETED_SELF_STATUS]);
+            $redis->set("self:deleted:{$messageId}",1);
+        }
+
+        if (MessageHelper::checkMessageExistInMysql($messageId)) {
+            MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_SELF_STATUS);
+        }
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+
+        $redis->close();
+        return [
+            'message_id' => $data['message_id'],
+            'status' => true,
+            'user_id' => $data['user_id']
         ];
 
     }

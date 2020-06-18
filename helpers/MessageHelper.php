@@ -22,6 +22,7 @@ class MessageHelper
     const MESSAGE_WRITE_STATUS = 1;
     const MESSAGE_EDITED_STATUS = 2;
     const MESSAGE_DELETED_STATUS = -1;
+    const MESSAGE_DELETED_SELF_STATUS = -2;
 
     const AVATAR_URL = 'https://indigo24.xyz/uploads/avatars/';
 
@@ -198,7 +199,7 @@ class MessageHelper
     /**
      * @param array $data
      */
-    public static function deleteMessageInMysql(array $data) :void
+    public static function updateMessageStatusInMysql(array $data,$status) :void
     {
         $sql = Manager::table('messages');
         $messageId = intval($data['message_id']);
@@ -211,8 +212,21 @@ class MessageHelper
         }
 
         $sql->update([
-                'status' => self::MESSAGE_DELETED_STATUS,
+                'status' => $status,
             ]);
     }
+
+    /**
+     * @param $messageId
+     * @return bool
+     */
+    public static function checkMessageExistInMysql($messageId) :bool
+    {
+        return Manager::table('messages')
+            ->where('redis_id',$messageId)
+            ->orWhere('id',$messageId)
+            ->exists();
+    }
+
 
 }

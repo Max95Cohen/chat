@@ -6,7 +6,9 @@ use Carbon\Carbon;
 use Helpers\ChatHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
+use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager as DB;
+use Patterns\ChatFactory\Factory;
 use Redis;
 
 class ChatController
@@ -56,82 +58,13 @@ class ChatController
 
     public function create(array $data)
     {
-        $userIds = explode(',', $data['user_ids']);
 
-        array_push($userIds, $data['user_id']);
+        $data = Factory::getItem($data['type'])->create($data,$this->redis);
 
-        $anotherUserName = null;
-
-        if ($data['type'] == self::PRIVATE) {
-            $anotherUser = $userIds[0];
-            $checkChat = $this->redis->get("private:{$anotherUser}:{$data['user_id']}");
-            $anotherUserAvatar = $this->redis->get("user:avatar:{$anotherUser}") ?? '';
-            $anotherUserName = $this->redis->get("user:name:{$anotherUser}");
-
-            if ($checkChat) {
-                return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
-                    'status' => 'false',
-                    'chat_id' => $checkChat,
-                    'name' => $anotherUserName,
-                    'avatar' => $anotherUserAvatar,
-                ]);
-            }
-        }
-
-
-        $chatId = DB::table('chats')->insertGetId([
-            'owner_id' => $data['user_id'],
-            'name' => $data['chat_name'],
-            'type' => $data['type'],
-            'members_count' => count($userIds),
-        ]);
-        $membersData = [];
-
-        switch ($data['type']) {
-            case self::PRIVATE :
-                foreach ($userIds as $userId) {
-                    $role = $userId == $data['user_id'] ? self::OWNER : self::SUBSCRIBER;
-                    $membersData[] = [
-                        'user_id' => $userId,
-                        'chat_id' => $chatId,
-                        'role' => $role,
-                    ];
-                    $this->redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
-                    $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
-                    $this->redis->set("private:{$userId}:{$data['user_id']}", $chatId);
-                    $this->redis->set("private:{$data['user_id']}:{$userId}", $chatId);
-                }
-                DB::table('chat_members')->insert($membersData);
-                $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "chat:message:create");
-                break;
-            case self::GROUP:
-                foreach ($userIds as $userId) {
-                    $role = $userId == $data['user_id'] ? self::OWNER : self::SUBSCRIBER;
-                    $membersData[] = [
-                        'user_id' => $userId,
-                        'chat_id' => $chatId,
-                        'role' => $role,
-                    ];
-                    $this->redis->zAdd("chat:members:{$chatId}", ['NX'], $role, $userId);
-                    $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
-                }
-                DB::table('chat_members')->insert($membersData);
-                $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "group:message:create");
-                break;
-        }
-
-
-
-        $data = [
-            'status' => 'true',
-            'chat_name' => $data['type'] == self::PRIVATE ? $anotherUserName : $data['chat_name'],
-            'members_count' => count($userIds),
-            'chat_id' => $chatId,
-
-        ];
+        $notifyUsers = ChatHelper::getChatMembers($data['chat_id'],$this->redis);
         $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat($userIds, $data);
 
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $data);
 
     }
 
@@ -152,25 +85,6 @@ class ChatController
         // нужно для сортировки,
         $responseData = [];
 
-        // получить user_id всех авторов последних сообщений и взять их аватарки и имена из базы
-
-        $allUserIds = [];
-
-        foreach ($userChatIds as $userChatId) {
-
-            $lastMessageId = $this->redis->zRangeByScore("chat:$userChatId", 2, time());
-            if ($lastMessageId) {
-
-                $lastMessageUserId = $this->redis->hGet($lastMessageId[0], 'user_id');
-                $allUserIds[] = $lastMessageUserId;
-
-            }
-
-        }
-        $allUserIds = array_unique($allUserIds);
-        $users = DB::table('customers')->whereIn('id', $allUserIds)->select('id', 'avatar', 'name')->get();
-
-
         foreach ($userChatIds as $userChatId) {
             $chat = $userChats->where('id', $userChatId)->first();
             $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
@@ -179,7 +93,6 @@ class ChatController
             $lastMessageUserId = $lastMessage['user_id'];
 
             if ($chat) {
-                $messageOwner = $lastMessage ? $users->where('id', $lastMessage['user_id'] ?? null)->first() : '';
                 //@TODO отрефакторить это
                 $chatUsers = $this->redis->zRange("chat:members:$userChatId", 0, -1);
 
@@ -202,6 +115,7 @@ class ChatController
 
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
                 $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
+                $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
 
                 $responseData[] = [
                     'id' => $userChatId,
@@ -215,8 +129,8 @@ class ChatController
                     'avatar_url' => MessageHelper::AVATAR_URL,
                     'last_message' => [
                         'id' => array_values($lastMessageId)[0] ?? '',
-                        'avatar' => $messageOwner->avatar ?? '',
-                        'user_name' => $messageOwner->user_name ?? '',
+                        'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
+                        'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
                         'text' => $lastMessage['text'] ?? '',
                         'time' => $lastMessage['time'] == "" ? $chatStartTime : $lastMessage['time'],
                         'type' => $type,

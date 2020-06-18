@@ -57,17 +57,17 @@
         // }));
 
         // создает чат
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:create',
-        //     data: {
-        //         user_id: 1,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         user_ids:'105744',
-        //         // chat_name:"",
-        //         type:0,
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:create',
+            data: {
+                user_id: 1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+                user_ids:'105744',
+                // chat_name:"",
+                type:1,
+            }
+
+        }));
         //
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
@@ -86,16 +86,28 @@
         // }));
         //message:deleted:all
 
-        socket.send(JSON.stringify({
-            cmd: 'message:deleted:all',
-            data: {
-                user_id:user_id,
-                userToken: userToken,
-                chat_id:chat_id,
-                message_id:message_id,
-            }
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:deleted:all',
+        //     data: {
+        //         user_id:user_id,
+        //         userToken: userToken,
+        //         chat_id:chat_id,
+        //         message_id:message_id,
+        //     }
+        //
+        // }));
+        //message:delete:one Удаление сообщения у самого себя
 
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:delete:self',
+        //     data: {
+        //         user_id:user_id,
+        //         userToken: userToken,
+        //         message_id:message_id,
+        //     }
+        //
+        // }));
+
         // получение всех чатов с пагинацией
         // socket.send(JSON.stringify({
         //     cmd: 'chats:get',

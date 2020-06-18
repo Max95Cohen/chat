@@ -64,15 +64,18 @@ class RouterController
         'message:edit' => [
             'action' => 'MessageController@edit',
             'params' => true,
+            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
         ],
 
         'message:deleted:all' => [
             'action' => 'MessageController@delete',
             'params' => true,
+            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
         ],
-        'message:delete:one' =>[
-            'action' => 'MessageController@deleteOne',
+        'message:delete:self' =>[
+            'action' => 'MessageController@deleteSelf',
             'params' => true,
+            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
         ],
 
         // memberController

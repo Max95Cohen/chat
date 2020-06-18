@@ -10,6 +10,8 @@ use Redis;
 class UserHelper
 {
 
+    const DEFAULT_AVATAR = 'noAvatar.png';
+
     /**
      * @param $userId
      * @param $token

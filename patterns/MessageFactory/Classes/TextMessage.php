@@ -3,6 +3,7 @@
 namespace Patterns\MessageFactory\Classes;
 
 use Helpers\MessageHelper;
+use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
 use Redis;
 
@@ -65,7 +66,7 @@ class TextMessage implements MessageInterface
     public function deleteMessage(array $data, Redis $redis) :array
     {
         MessageHelper::deleteMessageInRedis($data,$redis);
-        MessageHelper::deleteMessageInMysql($data);
+        MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_STATUS);
 
         return [
             'message_id' => $data['message_id'],
@@ -76,8 +77,31 @@ class TextMessage implements MessageInterface
 
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
     public function deleteOne(array $data, Redis $redis) :array
     {
+        $messageId = $data['message_id'];
+
+        $checkInRedis = $redis->exists($messageId);
+
+        if ($checkInRedis) {
+            $redis->hMSet($messageId,['status' => MessageHelper::MESSAGE_DELETED_SELF_STATUS]);
+            $redis->set("self:deleted:{$messageId}",1);
+        }
+
+        if (MessageHelper::checkMessageExistInMysql($messageId)) {
+            MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_SELF_STATUS);
+        }
+
+        return [
+            'message_id' => $data['message_id'],
+            'status' => true,
+            'user_id' => $data['user_id']
+        ];
 
     }
 

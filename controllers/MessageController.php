@@ -154,16 +154,15 @@ class MessageController
      * @param array $data
      * @return array
      */
-    public function deleteOne(array $data) :array
+    public function deleteSelf(array $data) :array
     {
         $checkRedis = $this->redis->hGet($data['message_id'],'type');
 
         $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
 
         $data = Factory::getItem($messageType)->deleteOne($data,$this->redis);
-        $notifyUsers = ChatHelper::getChatMembers($data['chat_id'],$this->redis);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$data);
 
     }
 
