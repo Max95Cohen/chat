@@ -3,58 +3,14 @@
 
 namespace Patterns\MessageFactory\Classes;
 
-use Helpers\MediaHelper;
+
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
-use Patterns\MessageFactory\Interfaces\MediaMessageInterface;
-use Redis;
-use \Swoole\Http\Request;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
+use Redis;
 
-class VoiceMessage implements MessageInterface, MediaMessageInterface
+class GeoPointMessage implements MessageInterface
 {
-
-    const VOICE_MEDIA_ULR = 'voice';
-    const VOICE_MEDIA_DIR = 'media/voice/';
-
-    /**
-     * @return string
-     */
-    public static function getMediaDir() :string
-    {
-        return MEDIA_DIR . '/' . self::VOICE_MEDIA_DIR;
-    }
-
-    /**
-     * @return string
-     */
-    public static function getMediaUrl() :string
-    {
-        return MEDIA_URL . self::VOICE_MEDIA_ULR;
-    }
-
-
-    /**
-     * @param Request $request
-     * @return array
-     */
-    public function upload(Request $request) :array
-    {
-        $extension = '.mp3';
-        $fileName  = MediaHelper::generateFileName($extension);
-        move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
-        return [
-            'data' => [
-                'status' => true,
-                'media_url' => self::getMediaUrl() .'/',
-                'file_name' => $fileName,
-            ],
-            'file_name' => $fileName
-        ];
-
-
-
-    }
 
     /**
      * @param Redis $redis
@@ -63,7 +19,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
-        $redis->hSet($redisKey,'type',MessageHelper::VOICE_MESSAGE_TYPE);
+        $redis->hSet($redisKey,'type',MessageHelper::GEO_POINT_MESSAGE_TYPE);
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
@@ -78,11 +34,9 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
-        $messageData['attachment_url'] = self::getMediaUrl() .'/';
-        $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
+        $messageData['type'] = MessageHelper::GEO_POINT_MESSAGE_TYPE;
         return $messageData;
     }
-
 
     /**
      * @param $messageId
@@ -91,7 +45,6 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      */
     public function getOriginalDataForReply($messageId, Redis $redis)
     {
-        // @TODO это тоже вынести в отдельный хелпер
         $messageDataInRedis = $redis->hGetAll($messageId);
 
         $messageData = $messageDataInRedis == false
@@ -103,14 +56,15 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
 
         return [
             'message_id' => $messageId,
-            'type' => MessageHelper::VOICE_MESSAGE_TYPE,
+            'type' => MessageHelper::GEO_POINT_MESSAGE_TYPE,
             'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
             'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
             'user_id' => $messageData['user_id'],
             'attachments' => array_shift($attachments),
-            'attachments_url' => self::getMediaUrl(),
-            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE)
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::GEO_POINT_MESSAGE_TYPE)
         ];
     }
+
+
 
 }

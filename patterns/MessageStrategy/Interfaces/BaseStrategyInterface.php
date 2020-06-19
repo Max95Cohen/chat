@@ -1,5 +1,6 @@
 <?php
 
+namespace Patterns\MessageStrategy\Interfaces;
 
 interface BaseStrategyInterface
 {

@@ -17,6 +17,10 @@ class MessageHelper
     const VOICE_MESSAGE_TYPE = 3;
     const VIDEO_MESSAGE_TYPE = 4;
     const SYSTEM_MESSAGE_TYPE = 7;
+    const SYSTEM_MESSAGE_DIVIDER_TYPE = 8;
+    const GEO_POINT_MESSAGE_TYPE = 9;
+    const REPLY_MESSAGE_TYPE = 10;
+
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
@@ -227,6 +231,20 @@ class MessageHelper
             ->orWhere('id',$messageId)
             ->exists();
     }
+
+    public static function getOriginalMessageDataForReply($messageId, Redis $redis) :array
+    {
+        $checkMessageInRedis = $redis->exists($messageId);
+
+        if ($checkMessageInRedis) {
+            $redis->hGetAll($messageId);
+
+            // тут в зависимости от типа нужно вернуть соответствующие данные
+
+        }
+
+    }
+
 
 
 }

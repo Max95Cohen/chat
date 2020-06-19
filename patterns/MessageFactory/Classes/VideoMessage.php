@@ -6,6 +6,7 @@ namespace Patterns\MessageFactory\Classes;
 
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
+use Illuminate\Database\Capsule\Manager;
 use Illuminate\Support\Str;
 use Redis;
 use Swoole\Http\Request;
@@ -139,6 +140,35 @@ class VideoMessage
             'user_id' => $data['user_id']
         ];
 
+    }
+
+
+    /**
+     * @param $messageId
+     * @param Redis $redis
+     * @return array
+     */
+    public function getOriginalDataForReply($messageId, Redis $redis)
+    {
+        $messageDataInRedis = $redis->hGetAll($messageId);
+
+        $messageData = $messageDataInRedis == false
+            ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'attachments'])->toArray()
+            : $messageDataInRedis;
+        //@TODO преписать через хелперскую функию вынести туда общие для всех классов поля и черех ... собирать в 1 массив
+
+        $attachments = json_decode($messageData['attachments'],true);
+
+        return [
+            'message_id' => $messageId,
+            'type' => MessageHelper::VIDEO_MESSAGE_TYPE,
+            'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
+            'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
+            'user_id' => $messageData['user_id'],
+            'attachments' => array_shift($attachments),
+            'attachments_url' => self::getMediaUrl(),
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::VIDEO_MESSAGE_TYPE)
+        ];
     }
 
 }

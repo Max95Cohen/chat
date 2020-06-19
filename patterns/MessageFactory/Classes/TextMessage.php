@@ -63,10 +63,10 @@ class TextMessage implements MessageInterface
      * @param Redis $redis
      * @return array
      */
-    public function deleteMessage(array $data, Redis $redis) :array
+    public function deleteMessage(array $data, Redis $redis): array
     {
-        MessageHelper::deleteMessageInRedis($data,$redis);
-        MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_STATUS);
+        MessageHelper::deleteMessageInRedis($data, $redis);
+        MessageHelper::updateMessageStatusInMysql($data, MessageHelper::MESSAGE_DELETED_STATUS);
 
         return [
             'message_id' => $data['message_id'],
@@ -82,19 +82,19 @@ class TextMessage implements MessageInterface
      * @param Redis $redis
      * @return array
      */
-    public function deleteOne(array $data, Redis $redis) :array
+    public function deleteOne(array $data, Redis $redis): array
     {
         $messageId = $data['message_id'];
 
         $checkInRedis = $redis->exists($messageId);
 
         if ($checkInRedis) {
-            $redis->hMSet($messageId,['status' => MessageHelper::MESSAGE_DELETED_SELF_STATUS]);
-            $redis->set("self:deleted:{$messageId}",1);
+            $redis->hMSet($messageId, ['status' => MessageHelper::MESSAGE_DELETED_SELF_STATUS]);
+            $redis->set("self:deleted:{$messageId}", 1);
         }
 
         if (MessageHelper::checkMessageExistInMysql($messageId)) {
-            MessageHelper::updateMessageStatusInMysql($data,MessageHelper::MESSAGE_DELETED_SELF_STATUS);
+            MessageHelper::updateMessageStatusInMysql($data, MessageHelper::MESSAGE_DELETED_SELF_STATUS);
         }
 
         return [
@@ -103,6 +103,29 @@ class TextMessage implements MessageInterface
             'user_id' => $data['user_id']
         ];
 
+    }
+
+    /**
+     * @param $messageId
+     * @param Redis $redis
+     * @return array
+     */
+    public function getOriginalDataForReply($messageId, Redis $redis)
+    {
+        $messageDataInRedis = $redis->hGetAll($messageId);
+
+        $messageData = $messageDataInRedis == false
+            ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'text'])->toArray()
+            : $messageDataInRedis;
+
+        return [
+            'message_id' => $messageId,
+            'text' => $messageData['text'],
+            'type' => MessageHelper::TEXT_MESSAGE_TYPE,
+            'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
+            'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
+            'user_id' => $messageData['user_id'],
+        ];
     }
 
 

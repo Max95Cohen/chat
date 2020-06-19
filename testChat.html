@@ -20,7 +20,7 @@
     var user_id = 40;
     var chat_id =12;
     var userToken ='5e2a0557ef07f2ef0c4521ed3541b6512055fa52';
-    var message_id = "message:1:272";
+    var message_id = "message:40:68";
 
     //908102
     socket.addEventListener('open', function (event) {
@@ -57,33 +57,34 @@
         // }));
 
         // создает чат
-        socket.send(JSON.stringify({
-            cmd: 'chat:create',
-            data: {
-                user_id: 1,
-                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-                user_ids:'105744',
-                // chat_name:"",
-                type:1,
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:create',
+        //     data: {
+        //         user_id: 1,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         user_ids:'105744',
+        //         // chat_name:"",
+        //         type:1,
+        //     }
+        //
+        // }));
         //
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
         //
-        // socket.send(JSON.stringify({
-        //     cmd: 'message:create',
-        //     data: {
-        //         user_id:user_id,
-        //         userToken: userToken,
-        //         chat_id:chat_id,
-        //         message_type:3,
-        //         text:"sad message",
-        //         attachments:images,
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'message:create',
+            data: {
+                user_id:user_id,
+                userToken: userToken,
+                chat_id:chat_id,
+                message_type:10,
+                message_id:message_id,
+                text:"sad message",
+                attachments:images,
+            }
+
+        }));
         //message:deleted:all
 
         // socket.send(JSON.stringify({
@@ -229,10 +230,6 @@
         //     }
         //
         // }));
-
-
-
-
 
     });
 
