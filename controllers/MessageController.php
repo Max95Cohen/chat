@@ -9,6 +9,7 @@ use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
 use Redis;
+use Traits\RedisTrait;
 
 class MessageController
 {
@@ -20,16 +21,7 @@ class MessageController
     const WRITE = 1;
     const NO_WRITE = 0;
 
-
-    private $redis;
-
-    public function __construct()
-    {
-        $this->redis = new Redis();
-        $this->redis->connect('127.0.0.1', 6379);
-
-    }
-
+    use RedisTrait;
 
     public function create(array $data)
     {
@@ -142,6 +134,8 @@ class MessageController
         $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
 
         $data =  Factory::getItem($messageType)->deleteMessage($data,$this->redis);
+
+        $this->redis->set("all:delete:{$data['message_id']}");
 
         $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
         $this->redis->close();

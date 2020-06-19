@@ -9,6 +9,7 @@ use Controllers\MessageController;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager;
+use Patterns\MessageFactory\Factory;
 use Redis;
 
 class MysqlStrategy
@@ -31,6 +32,7 @@ class MysqlStrategy
         $allMessages = Manager::table('messages')
             ->orderBy('time', 'desc')
             ->where('chat_id', $data['chat_id'])
+            ->where("status",'>=',MessageHelper::MESSAGE_NO_WRITE_STATUS)
             ->skip(($data['page'] * $data['count']) - $data['count'])
             ->take($data['count'])
             ->get();
@@ -50,6 +52,8 @@ class MysqlStrategy
         $attachments = $message['attachments'] ?? null;
         foreach ($allMessages as $message) {
             // возвращаю сообщения в корректном формате
+            $messageType = $message->type ?? 0;
+
             $messagesForDivider[] = [
                 'id' => strval($message->id),
                 'user_id' => $message->user_id,
@@ -58,11 +62,12 @@ class MysqlStrategy
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
                 'text' => $message->text ?? null,
                 'chat_id' => $message->chat_id,
-                'type' => $message->type ?? 0,
+                'type' => $messageType,
                 'time' => $message->time,
                 'day' => Carbon::parse($message->time)->format('d-m-Y'),
                 'hour' => Carbon::parse($message->time)->format('H:i'),
                 'attachments' => $attachments,
+                'reply_data' => Factory::getItem($messageType)->getOriginalDataForReply($message->id,$this->redis) ?? null
             ];
             $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
 

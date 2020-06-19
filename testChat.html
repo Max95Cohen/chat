@@ -72,19 +72,19 @@
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
         //
-        socket.send(JSON.stringify({
-            cmd: 'message:create',
-            data: {
-                user_id:user_id,
-                userToken: userToken,
-                chat_id:chat_id,
-                message_type:10,
-                message_id:message_id,
-                text:"sad message",
-                attachments:images,
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'message:create',
+        //     data: {
+        //         user_id:user_id,
+        //         userToken: userToken,
+        //         chat_id:chat_id,
+        //         message_type:10,
+        //         message_id:message_id,
+        //         text:"sad message",
+        //         attachments:images,
+        //     }
+        //
+        // }));
         //message:deleted:all
 
         // socket.send(JSON.stringify({
@@ -121,16 +121,16 @@
         // }));
 
         // // получение одного чата
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:get',
-        //     data: {
-        //         user_id: user_id,
-        //         chat_id:chat_id,
-        //         page:1,
-        //         // divider:1,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //     }
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:get',
+            data: {
+                user_id: user_id,
+                chat_id:chat_id,
+                page:1,
+                // divider:1,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+            }
+        }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',

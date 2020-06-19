@@ -9,19 +9,14 @@ use Helpers\PhoneHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Redis;
+use Traits\RedisTrait;
 
 class UserController
 {
-    private $redis;
+    use RedisTrait;
+
 
     const USER_ONLINE = 1;
-
-    public function __construct()
-    {
-        $this->redis = new \Redis();
-        $this->redis->connect('127.0.0.1', 6379);
-    }
-
 
     public function checkExist(array $data)
     {

@@ -41,6 +41,10 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         array (
             'Webmozart\\Assert\\' => 17,
         ),
+        'T' => 
+        array (
+            'Traits\\' => 7,
+        ),
         'S' => 
         array (
             'Symfony\\Polyfill\\Php73\\' => 23,
@@ -148,6 +152,10 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         'Webmozart\\Assert\\' => 
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
+        ),
+        'Traits\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/traits',
         ),
         'Symfony\\Polyfill\\Php73\\' => 
         array (

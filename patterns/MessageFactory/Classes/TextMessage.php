@@ -117,7 +117,6 @@ class TextMessage implements MessageInterface
         $messageData = $messageDataInRedis == false
             ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'text'])->toArray()
             : $messageDataInRedis;
-
         return [
             'message_id' => $messageId,
             'text' => $messageData['text'],

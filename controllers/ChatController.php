@@ -13,18 +13,11 @@ use Patterns\MessageStrategy\Classes\MysqlStrategy;
 use Patterns\MessageStrategy\Classes\RedisStrategy;
 use Patterns\MessageStrategy\Strategy;
 use Redis;
+use Traits\RedisTrait;
 
 class ChatController
 {
-    private $redis;
-
-    public function __construct()
-    {
-        $this->redis = new Redis();
-        $this->redis->connect('127.0.0.1', 6379);
-
-    }
-
+    use RedisTrait;
 
     const PRIVATE = 0;
     const GROUP = 1;

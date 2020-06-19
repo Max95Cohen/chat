@@ -6,6 +6,7 @@ namespace Patterns\MessageStrategy\Classes;
 use Controllers\MessageController;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
+use Patterns\MessageFactory\Factory;
 use Patterns\MessageStrategy\Interfaces\MessageStrategyInterface;
 use Redis;
 
@@ -49,8 +50,11 @@ class RedisStrategy implements MessageStrategyInterface
             $message = $this->redis->hGetAll($chatMessageId);
             $attachments = $message['attachments'] ?? null;
 
-
-            if ($message) {
+            $checkSelfDeleted = $this->redis->get("self:deleted:{$chatMessageId}");
+            $checkAllDeleted = $this->redis->get("all:deleted:{$chatMessageId}");
+            //@TODO отрекфакторить
+            if ($message && !$checkSelfDeleted && !$checkAllDeleted) {
+                $messageType = $message->type ?? 0;
                 $messagesForDivider[] = [
                     'id' => $chatMessageId,
                     'user_id' => $message['user_id'],
@@ -64,6 +68,7 @@ class RedisStrategy implements MessageStrategyInterface
                     'attachments' => $attachments,
                     'day' => date('d-m-Y', $message['time'] ?? 1),
                     'hour' => date('H:i', $message['time'] ?? 1),
+                    'reply_data' => Factory::getItem($messageType)->getOriginalDataForReply($message['reply_message_id'],$this->redis) ?? null
                 ];
             }
 
