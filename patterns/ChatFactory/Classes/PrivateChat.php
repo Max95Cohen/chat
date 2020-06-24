@@ -7,10 +7,11 @@ use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager as DB;
 use Patterns\ChatFactory\Interfaces\BaseChatCreateInterface;
 use Redis;
+use Traits\RedisTrait;
 
 class PrivateChat implements BaseChatCreateInterface
 {
-
+    use RedisTrait;
     /**
      * @param array $data
      * @param Redis $redis
@@ -32,6 +33,7 @@ class PrivateChat implements BaseChatCreateInterface
                 'chat_id' => $checkChat,
                 'name' => $anotherUserName,
                 'avatar' => $anotherUserAvatar,
+                'user_id' => $anotherUserId,
             ];
 
         }
@@ -62,12 +64,12 @@ class PrivateChat implements BaseChatCreateInterface
         DB::table('chat_members')->insert($membersData);
         $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "chat:message:create");
 
-
+        $this->redis->close();
         return [
             'status' => 'true',
             'chat_name' => $anotherUserName,
             'chat_id' => $chatId,
-
+            'user_id' => $anotherUserId
         ];
 
 

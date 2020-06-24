@@ -3,6 +3,10 @@
 namespace Controllers;
 
 use Helpers\ResponseFormatHelper;
+use Middlewars\Auth\CheckUserTokenMiddleware;
+use Middlewars\Permission\CheckPrivilegesForAddGroupChat;
+use Middlewars\Permission\CheckPrivilegesForMessageMiddleware;
+use Middlewars\Permission\CheckUserInChatMembersMiddleware;
 
 class RouterController
 {
@@ -11,7 +15,6 @@ class RouterController
         'init' => [
             'action' => 'AuthController@init',
             'params' => true,
-            'middleware' => ['\Auth\CheckUserTokenMiddleware'],
         ],
 
         'user:check' => [
@@ -26,11 +29,6 @@ class RouterController
             'action' => 'UserController@checkOnline',
             'params' => true,
         ],
-        'user:writing' =>[
-            'action' => 'UserController@writing',
-            'params' => true,
-        ],
-
 
         //ChatController
         'chat:create' => [
@@ -55,7 +53,7 @@ class RouterController
             'action' => 'MessageController@create',
             'params' => true,
             //@TODO передать через ::class
-            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckUserInChatMembersMiddleware'],
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'message:write' => [
             'action' => 'MessageController@write',
@@ -64,18 +62,18 @@ class RouterController
         'message:edit' => [
             'action' => 'MessageController@edit',
             'params' => true,
-            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
+            'middleware' => [CheckUserTokenMiddleware::class,CheckPrivilegesForMessageMiddleware::class]
         ],
 
         'message:deleted:all' => [
             'action' => 'MessageController@delete',
             'params' => true,
-            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
+            'middleware' => [CheckUserTokenMiddleware::class,CheckPrivilegesForMessageMiddleware::class]
         ],
         'message:delete:self' =>[
             'action' => 'MessageController@deleteSelf',
             'params' => true,
-            'middleware' => ['\Auth\CheckUserTokenMiddleware','\Permission\CheckPrivilegesForMessageMiddleware']
+            'middleware' => [CheckUserTokenMiddleware::class,CheckPrivilegesForMessageMiddleware::class]
         ],
 
         // memberController
@@ -95,7 +93,7 @@ class RouterController
         'chat:members:add' =>[
             'action' => 'MemberController@addMembers',
             'params' => true,
-            'middleware' => ['\Permission\CheckPrivilegesForAddGroupChat']
+            'middleware' => [CheckPrivilegesForAddGroupChat::class]
         ],
 
         'chat:members:check' =>[
@@ -135,7 +133,7 @@ class RouterController
 
             if (is_array($middlewars)) {
                 foreach ($middlewars as $middlewar) {
-                    $middlewareNamespace = 'Middlewars' . $middlewar;
+                    $middlewareNamespace = $middlewar;
                     $middlewareClass = new $middlewareNamespace;
                     $middlewareResponse = $middlewareClass->handle($params);
 

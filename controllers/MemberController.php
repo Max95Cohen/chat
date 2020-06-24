@@ -15,13 +15,16 @@ class MemberController
     use RedisTrait;
 
 
+    /**
+     * @param array $data
+     * @return array[]
+     */
     public function getChatMembers(array $data)
     {
         $chatId = $data['chat_id'];
 
         $membersId = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, 3, ['withscores' => true]);
         $responseData = [];
-        var_dump($membersId);
 
         foreach ($membersId as $memberId => $role) {
             $online = UserHelper::checkOnline($memberId, $this->redis);
@@ -34,7 +37,9 @@ class MemberController
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:$memberId"),
                 'online' => $online,
-                'role' => strval($role)
+                'role' => strval($role),
+                'email' => $this->redis->get("user:email:{$memberId}") ?? '',
+                'phone' => $this->redis->get("user:phone:{$memberId}") ?? '',
             ];
         }
         $this->redis->close();
@@ -43,19 +48,25 @@ class MemberController
 
     }
 
+    /**
+     * @param array $data
+     * @return array[]
+     */
     public function changeUserPrivileges(array $data)
     {
         $chatId = $data['chat_id'];
         $userId = $data['user_id'];
         $role = $data['role'];
-
+        dump("work change");
         $membersForChange = explode(',', $data['members']);
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 3);
 
         $checkAdmin = array_search($userId, $chatMembers);
         $checkMembersForChange = array_intersect($membersForChange, $chatMembers);
+        dump($checkMembersForChange);
         $changeUsers = [];
-
+        dump($checkAdmin );
+        //@TODO подключить middleware
         if ($checkAdmin === ChatController::OWNER && in_array($role, ChatController::getRolesForOwner())) {
             foreach ($checkMembersForChange as $memberForChange) {
                 $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberForChange);
@@ -91,7 +102,10 @@ class MemberController
 
         foreach ($deletedMembers as $deletedMember) {
             if (in_array($deletedMember,$chatMembers)) {
+                $this->redis->zRem("chat:members:{$chatId}",$deletedMember);
+                $this->redis->zRem("user:chat:{$deletedMember}",$chatId);
 
+                $this->redis->zAdd("chat:members:{$chatId}",['NX'],ChatController::BANNED,$deletedMember);
             }
         }
 
@@ -105,7 +119,7 @@ class MemberController
     public function addMembers(array $data): array
     {
         $chatId = $data['chat_id'];
-        $membersId = explode(',', $data['members_id']);
+        $membersId = array_unique(explode(',', $data['members_id']));
         $userId = $data['user_id'];
 
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 3, ['withscores' => true]);
@@ -149,6 +163,10 @@ class MemberController
     }
 
 
+    /**
+     * @param array $data
+     * @return array[]
+     */
     public function checkExists(array $data)
     {
         $memberId = $data['member_id'];

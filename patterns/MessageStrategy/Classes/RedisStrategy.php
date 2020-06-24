@@ -3,23 +3,17 @@
 namespace Patterns\MessageStrategy\Classes;
 
 
+use Carbon\Carbon;
 use Controllers\MessageController;
 use Helpers\MessageHelper;
-use Helpers\ResponseFormatHelper;
 use Patterns\MessageFactory\Factory;
 use Patterns\MessageStrategy\Interfaces\MessageStrategyInterface;
-use Redis;
+use Traits\RedisTrait;
 
 class RedisStrategy implements MessageStrategyInterface
 {
 
-    private Redis $redis;
-
-    public function __construct()
-    {
-        $this->redis = new Redis();
-        $this->redis->connect('127.0.0.1', 6379);
-    }
+    use RedisTrait;
 
 
     public function getMessages(array $data): array
@@ -32,6 +26,7 @@ class RedisStrategy implements MessageStrategyInterface
         $endChat = $startChat + $count;
 
         $chatMessagesId = $this->redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
+
         $messagesForDivider = [];
         foreach ($chatMessagesId as $chatMessageId) {
             $chatStartTime = $this->redis->zRange("chat:{$chatId}", 0, 0, true);
@@ -40,11 +35,19 @@ class RedisStrategy implements MessageStrategyInterface
             $messageOwner = $this->redis->hGet($chatMessageId, 'user_id');
             $messageWriteStatus = $this->redis->hGet($chatMessageId, 'status');
 
+            if ($messageOwner != $data['user_id'] && $messageWriteStatus != MessageController::WRITE) {
+                dump("sad test if work");
 
-            if ($messageOwner != $data['user_id'] && $messageWriteStatus != MessageController::WRITE && $messageOwner) {
-                $this->redis->incrBy("chat:unwrite:count:{$chatId}", -1);
-                $this->redis->hMSet($chatMessageId, ['status' => MessageController::WRITE]);
+                $this->redis->watch("chat:unwrite:count:{$chatId}");
+                $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));
+                if ($unwriteCount > 0) {
+                    $unwriteCount-=1;
+                    $this->redis->multi();
+                    $this->redis->set("chat:unwrite:count:{$chatId}",$unwriteCount);
 
+                    $this->redis->hSet($chatMessageId,'status', MessageControlleITE);r::WR
+                }
+                $this->redis->exec();
             }
 
             $message = $this->redis->hGetAll($chatMessageId);
@@ -52,9 +55,17 @@ class RedisStrategy implements MessageStrategyInterface
 
             $checkSelfDeleted = $this->redis->get("self:deleted:{$chatMessageId}");
             $checkAllDeleted = $this->redis->get("all:deleted:{$chatMessageId}");
+
+
             //@TODO отрекфакторить
             if ($message && !$checkSelfDeleted && !$checkAllDeleted) {
-                $messageType = $message->type ?? 0;
+                $messageType = $message['type'] ?? 0;
+                $replyMessageId = $message['reply_message_id'] ?? null;
+
+                $messageClass = Factory::getItem($messageType);
+                $edit = $message['edit'] ?? 0;
+
+
                 $messagesForDivider[] = [
                     'id' => $chatMessageId,
                     'user_id' => $message['user_id'],
@@ -64,38 +75,41 @@ class RedisStrategy implements MessageStrategyInterface
                     'text' => $message['text'] ?? null,
                     'type' => $message['type'] ?? 0,
                     'chat_id' => $message['chat_id'],
-                    'time' => $message['time'],
+                    'time' => $message['time'] ?? $chatStartTime,
                     'attachments' => $attachments,
-                    'day' => date('d-m-Y', $message['time'] ?? 1),
-                    'hour' => date('H:i', $message['time'] ?? 1),
-                    'reply_data' => Factory::getItem($messageType)->getOriginalDataForReply($message['reply_message_id'],$this->redis) ?? null
+                    'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
+                    'reply_data' => $replyMessageId ? $messageClass->getOriginalDataForReply($message['reply_message_id'], $this->redis) : null,
+                    'write' => $message['status'],
+                    'day' => date('d-m-Y', (int)$message['time']),
+                    'edit' => $edit,
                 ];
             }
 
 
         }
-        $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
-
-        $messagesWithDivider = [];
-        foreach ($allDays as $day) {
-            $messagesWithDivider[$day] = collect($messagesForDivider)->where('day', $day)->toArray();
-        }
-
-        $responseDataWithDivider = [];
-
-        foreach ($messagesWithDivider as $date => $dividerData) {
-
-            $dividerData = array_combine(range(1, count($dividerData)), $dividerData);
-            $dividerData[0] = [
-                'text' => $date,
-                'type' => MessageHelper::SYSTEM_MESSAGE_DIVIDER_TYPE,
-            ];
-            sort($dividerData);
-            $responseDataWithDivider = [...$responseDataWithDivider,...$dividerData];
-
-        }
+//        $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
+//
+//        $messagesWithDivider = [];
+//        foreach ($allDays as $day) {
+//            $messagesWithDivider[$day] = collect($messagesForDivider)->where('day', $day)->toArray();
+//        }
+//
+//        $responseDataWithDivider = [];
+//
+//        foreach ($messagesWithDivider as $date => $dividerData) {
+//            $dividerData = array_combine(range(1, count($dividerData)), $dividerData);
+//            $dividerData[0] = [
+//                'text' => $date,
+//                'type' => MessageHelper::SYSTEM_MESSAGE_DIVIDER_TYPE,
+//                'time' => Carbon::parse($date)->timestamp
+//            ];
+//            sort($dividerData);
+//            $responseDataWithDivider = [...$responseDataWithDivider, ...$dividerData];
+//
+//        }
         $this->redis->close();
-        return $responseDataWithDivider;
+//        dump(collect($messagesForDivider)->sortByDesc('time')->toArray());
+        return $messagesForDivider;
 
     }
 

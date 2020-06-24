@@ -23,13 +23,16 @@ class MessageController
 
     use RedisTrait;
 
+    /**
+     * @param array $data
+     * @return array
+     */
     public function create(array $data)
     {
 
         // у каждого юзера есть counter сообщений
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
-
 
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");
@@ -51,6 +54,8 @@ class MessageController
 
         $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
 
+        $data['message_type'] = $this->redis->hGet($messageRedisKey,'type');
+        dump($data['message_type']);
         // добавляем сообщение в чат
 
         MessageHelper::addMessageInChat($this->redis, $chatId, $messageRedisKey);
@@ -81,13 +86,24 @@ class MessageController
 
         $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:{$userId}:{$messageId}");
 
+        $messageClass = Factory::getItem($data['message_type']);
+
+        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
+
+        $responseData = $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis);
+        $this->redis->close();
+
         return [
-            'data' => $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis),
+            'data' => $responseData,
             'notify_users' => $notifyUsers,
         ];
 
     }
 
+    /**
+     * @param array $data
+     * @return array[]
+     */
     public function write(array $data)
     {
         $messageId = $data['message_id'];
@@ -106,7 +122,6 @@ class MessageController
             'owner_id' => $messageOwner,
             'write' => strval(MessageController::WRITE),
         ]);
-
 
     }
 
@@ -135,7 +150,7 @@ class MessageController
 
         $data =  Factory::getItem($messageType)->deleteMessage($data,$this->redis);
 
-        $this->redis->set("all:delete:{$data['message_id']}");
+        $this->redis->set("all:delete:{$data['message_id']}",1);
 
         $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
         $this->redis->close();

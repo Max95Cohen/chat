@@ -93,9 +93,11 @@ class ChatController
         foreach ($userChatIds as $userChatId) {
             $chat = $userChats->where('id', $userChatId)->first();
             $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
+            //@TODO тестовая фигня нужно проверить и исправить
+            $lastMessageId = $lastMessageId[0] ?? null;
+            $lastMessage = $lastMessageId ? $this->redis->hGetAll($lastMessageId) : [];
+            $lastMessageUserId = $lastMessage['user_id'] ?? null;
 
-            $lastMessage = $this->redis->hGetAll($lastMessageId[0]);
-            $lastMessageUserId = $lastMessage['user_id'];
 
             if ($chat) {
                 $chatStartTime = $this->redis->zRange("chat:{$userChatId}", 0, 0, true);
@@ -105,6 +107,15 @@ class ChatController
                 $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
                 $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
 
+                $lastMessageText = $lastMessage['text'] ?? null;
+                $lastMessageTime = $lastMessage['time'] ?? '';
+
+                //@TODO пока нужно потом отрефакторить
+                $chatUsers = $this->redis->zRange("chat:members:$userChatId", 0, -1);
+
+                $anotherUsers = array_diff($chatUsers, [$data['user_id']]);
+                $anotherUserId = array_shift($anotherUsers);
+                //*****
                 $responseData[] = [
                     'id' => $userChatId,
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
@@ -113,12 +124,13 @@ class ChatController
                     'members_count' => $chat->members_count,
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
                     'avatar_url' => MessageHelper::AVATAR_URL,
+                    'another_user_id' =>$anotherUserId,
                     'last_message' => [
-                        'id' => array_values($lastMessageId)[0] ?? '',
+                        'id' => $lastMessageId ?? '',
                         'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
                         'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
-                        'text' => $lastMessage['text'] ?? '',
-                        'time' => $lastMessage['time'] == "" ? $chatStartTime : $lastMessage['time'],
+                        'text' => $lastMessageText ?? '',
+                        'time' => $lastMessageTime == "" ? $chatStartTime : $lastMessageTime,
                         'type' => $type,
                         'message_for_type' => $messageForType,
                     ],

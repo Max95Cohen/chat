@@ -30,7 +30,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      */
     public static function getMediaUrl() :string
     {
-        return MEDIA_URL . self::VOICE_MEDIA_ULR;
+        return MEDIA_URL . self::VOICE_MEDIA_ULR . '/';
     }
 
 
@@ -46,7 +46,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         return [
             'data' => [
                 'status' => true,
-                'media_url' => self::getMediaUrl() .'/',
+                'media_url' => self::getMediaUrl(),
                 'file_name' => $fileName,
             ],
             'file_name' => $fileName
@@ -78,7 +78,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
-        $messageData['attachment_url'] = self::getMediaUrl() .'/';
+        $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
         return $messageData;
     }
@@ -110,6 +110,50 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             'attachments' => array_shift($attachments),
             'attachments_url' => self::getMediaUrl(),
             'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE)
+        ];
+    }
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function deleteMessage(array $data, Redis $redis): array
+    {
+        MessageHelper::deleteMessageInRedis($data, $redis);
+        MessageHelper::updateMessageStatusInMysql($data, MessageHelper::MESSAGE_DELETED_STATUS);
+
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_DELETED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'user_id' => $data['user_id'],
+        ];
+
+    }
+
+    /**
+     * @param $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function editMessage($data, Redis $redis)
+    {
+        MediaHelper::messageEditInRedis($data, $redis);
+        MediaHelper::messageEditInMysql($data);
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+        return [
+            'chat_id' => $data['chat_id'],
+            'attachments' => $data['attachments'],
+            'attachment_url' => self::getMediaUrl(),
+            'message_id' => $data['message_id'],
+            'text' => $data['text'],
+            'user_id' => $data['user_id'],
+            'time' => $data['time'],
+            'avatar' => $redis->get("user:avatar:{$data['user_id']}") ?? '',
+            'user_name' => $redis->get("user:name:{$data['user_id']}") ?? '',
+            'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
+            'type' => $data['message_type'],
+            'edit' => 1,
         ];
     }
 

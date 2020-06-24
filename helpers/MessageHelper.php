@@ -20,7 +20,8 @@ class MessageHelper
     const SYSTEM_MESSAGE_DIVIDER_TYPE = 8;
     const GEO_POINT_MESSAGE_TYPE = 9;
     const REPLY_MESSAGE_TYPE = 10;
-
+    const MONEY_MESSAGE_TYPE = 11;
+    const LINK_MESSAGE_TYPE = 12;
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
@@ -172,7 +173,7 @@ class MessageHelper
 
         if ($checkExistInRedis) {
             $redis->hMSet($data['message_id'], ['text' => $data['text']]);
-            $redis->hMSet($data['edited'], self::MESSAGE_EDITED_STATUS);
+            $redis->hSet($data['message_id'],'edit',1);
         }
 
     }
@@ -187,7 +188,7 @@ class MessageHelper
             ->orWhere('id', $data['message_id'])
             ->update([
                 'text' => $data['text'],
-                'status' => self::MESSAGE_EDITED_STATUS,
+                'edit' => 1,
             ]);
     }
 
@@ -198,6 +199,8 @@ class MessageHelper
     public static function deleteMessageInRedis(array $data, Redis $redis): void
     {
         $redis->hMSet($data['message_id'], ['status' => self::MESSAGE_DELETED_STATUS]);
+        $redis->set("all:deleted:{$data['message_id']}",1);
+        $redis->zRem("chat:{$data['chat_id']}",$data['message_id']);
     }
 
     /**
@@ -218,6 +221,7 @@ class MessageHelper
         $sql->update([
                 'status' => $status,
             ]);
+
     }
 
     /**
@@ -245,6 +249,12 @@ class MessageHelper
 
     }
 
+
+    public static function getChatIdByUsersId( int $userId, int $anotherUserId,Redis $redis)
+    {
+        $chatId = $redis->get("private:{$userId}:{$anotherUserId}");
+        return $chatId === false ? $redis->get("private:{$anotherUserId}:{$userId}") : $chatId;
+    }
 
 
 }

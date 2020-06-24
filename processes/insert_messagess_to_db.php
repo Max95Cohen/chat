@@ -70,7 +70,6 @@ while (true) {
             $redis->zRem('all:messages',$deletedMessage);
 
             $deletedMessageData = $redis->hGetAll($deletedMessage);
-            dump($deletedMessageData);
             $deletedChatId = $deletedMessageData['chat_id'];
 
             $chatMessageCount = $redis->zCount("chat:{$deletedChatId}", '-inf', '+inf');

@@ -47,14 +47,12 @@ while (true) {
                 $message = $redis->hGetAll($data['link']);
                 if ($message) {
                     $attachments = $message['attachments'] ?? null;
-                    dump($message);
                     $messageText = $attachments ? MessageHelper::getAttachmentTypeString($message['type']) : $message['text'];
 
                     //@TODO хранить имена чатов в redis сегодня для теста пусть берет из mysql
 
                     $chat = Manager::table('chats')->find($message['chat_id']);
                     $chatMembers = $redis->zRangeByScore("chat:members:{$message['chat_id']}", 0, "+inf");
-                    dump($chatMembers);
                     if ($chat && is_array($chatMembers)) {
                         $chatMembers = array_diff($chatMembers, [$message['user_id']]);
 
@@ -92,7 +90,6 @@ while (true) {
                                 $deviceTokens[] = $fcm;
                             }
                         }
-                        dump($deviceTokens);
                         $sendReport = $messaging->sendMulticast($messageForPush, $deviceTokens);
                         dump($sendReport->failures());
                         dump($sendReport->successes()->count() . "успешно отправлено");

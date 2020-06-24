@@ -12,7 +12,7 @@ use Redis;
 class CheckPrivilegesForMessageMiddleware implements BaseMiddlewareInterface
 {
 
-    private bool $next;
+    private bool $next = false;
     private Redis $redis;
 
     public function __construct()
@@ -45,9 +45,8 @@ class CheckPrivilegesForMessageMiddleware implements BaseMiddlewareInterface
     public function handle(array $data)
     {
         $messageOwnerCheckInRedis = $this->redis->hGet($data['message_id'], 'user_id');
-        $messageOwner = $messageOwnerCheckInRedis === false ? Manager::table('messages')->where('message_id')->value('user_id') : $messageOwnerCheckInRedis;
-
-        if ($messageOwner == $data['user_id']) {
+        $messageOwner = $messageOwnerCheckInRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('user_id') : $messageOwnerCheckInRedis;
+        if ($messageOwner != $data['user_id']) {
             $this->redis->close();
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ["success" => false, "message" => 'нельзя редактировать чужие сообщения']);
         }

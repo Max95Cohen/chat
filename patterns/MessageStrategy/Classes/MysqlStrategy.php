@@ -6,6 +6,7 @@ namespace Patterns\MessageStrategy\Classes;
 
 use Carbon\Carbon;
 use Controllers\MessageController;
+use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Illuminate\Database\Capsule\Manager;
@@ -22,37 +23,38 @@ class MysqlStrategy
         $this->redis->connect('127.0.0.1');
     }
 
-
     /**
      * @param array $data
      * @return array
      */
     public function getMessages(array $data): array
     {
+
+        $chatId = $data['chat_id'];
+
         $allMessages = Manager::table('messages')
             ->orderBy('time', 'desc')
-            ->where('chat_id', $data['chat_id'])
-            ->where("status",'>=',MessageHelper::MESSAGE_NO_WRITE_STATUS)
+            ->where('chat_id', $chatId)
+            ->where("status", '>=', MessageHelper::MESSAGE_NO_WRITE_STATUS)
             ->skip(($data['page'] * $data['count']) - $data['count'])
             ->take($data['count'])
             ->get();
+//        dump($allMessages);
 
-        $writeCount = $allMessages->where('user_id', '!=', $data['user_id'])->where('status', MessageController::NO_WRITE)->count();;
+        $firstMessageId = $allMessages->first() ? $allMessages->first()->id : null;
+        $lastMessageId = $allMessages->last() ? $allMessages->last()->id : null;
 
-
-        if ($allMessages->last()->user_id !== $data['user_id']) {
-            Manager::table('messages')
-                ->orderBy('time', 'desc')
-                ->where('chat_id', $data['chat_id'])
-                ->skip(($data['page'] * $data['count']) - $data['count'])
-                ->update(['status' => MessageController::WRITE]);
-        }
 
         $messagesForDivider = [];
         $attachments = $message['attachments'] ?? null;
+        $responseDataWithDivider = [];
         foreach ($allMessages as $message) {
             // возвращаю сообщения в корректном формате
             $messageType = $message->type ?? 0;
+            $replyMessageId = $message->reply_message_id ?? null;
+
+            $messageClass = Factory::getItem($messageType);
+            $edit = $message->edit ?? 0;
 
             $messagesForDivider[] = [
                 'id' => strval($message->id),
@@ -64,38 +66,41 @@ class MysqlStrategy
                 'chat_id' => $message->chat_id,
                 'type' => $messageType,
                 'time' => $message->time,
-                'day' => Carbon::parse($message->time)->format('d-m-Y'),
-                'hour' => Carbon::parse($message->time)->format('H:i'),
                 'attachments' => $attachments,
-                'reply_data' => Factory::getItem($messageType)->getOriginalDataForReply($message->id,$this->redis) ?? null
+                'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
+                'reply_data' => $replyMessageId ? $messageClass->getOriginalDataForReply($message->id, $this->redis) : null,
+                'write' =>(string) $message->status,
+                'edit' => $edit,
             ];
-            $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
-
-            $messagesWithDivider = [];
-            foreach ($allDays as $day) {
-                $messagesWithDivider[$day] = collect($messagesForDivider)->where('day', $day)->toArray();
-            }
-
-            $responseDataWithDivider = [];
-
-            foreach ($messagesWithDivider as $date => $dividerData) {
-
-                $dividerData = array_combine(range(1, count($dividerData)), $dividerData);
-                $dividerData[0] = [
-                    'text' => $date,
-                    'type' => 'divider',
-                ];
-                sort($dividerData);
-                $responseDataWithDivider[] = [...$responseDataWithDivider,$dividerData];
+            dump($message->user_id,$message->status);
+            if ($message->status == MessageController::NO_WRITE && $message->user_id != $data['user_id']) {
+                $this->redis->watch("chat:unwrite:count:{$chatId}");
+                $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));
+                dump($unwriteCount);
+                if ($unwriteCount > 0) {
+                    $unwriteCount-=1;
+                    $this->redis->multi();
+                    $this->redis->set("chat:unwrite:count:{$chatId}",$unwriteCount);
+                    $this->redis->exec();
+                }
             }
 
         }
 
-        $writeCount = $writeCount != 0 ? -1 * $writeCount : 0;
+        // обновляю статус на прочитанное
+        if ($allMessages->last()) {
+            if ($allMessages->last()->user_id != $data['user_id']) {
+                Manager::table('messages')
+                    ->where('id','>=',$firstMessageId)
+                    ->where('id','<=',$lastMessageId)
+                    ->update(['status' => MessageController::WRITE]);
+            }
+        }
 
-        $this->redis->incrBy("chat:unwrite:count:{$data['chat_id']}", $writeCount);
-            $this->redis->close();
-            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseDataWithDivider[0]);
+
+
+        $this->redis->close();
+        return $messagesForDivider;
     }
 
 }

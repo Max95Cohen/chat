@@ -6,6 +6,7 @@ use Helpers\MessageHelper;
 use Patterns\MessageFactory\Classes\DocumentMessage;
 use Patterns\MessageFactory\Classes\GeoPointMessage;
 use Patterns\MessageFactory\Classes\ImageMessage;
+use Patterns\MessageFactory\Classes\LinkMessage;
 use Patterns\MessageFactory\Classes\ReplyMessage;
 use Patterns\MessageFactory\Classes\TextMessage;
 use Patterns\MessageFactory\Classes\VideoMessage;
@@ -39,6 +40,8 @@ class Factory
 
             case MessageHelper::REPLY_MESSAGE_TYPE:
                 return new ReplyMessage();
+            case MessageHelper::LINK_MESSAGE_TYPE:
+                return new LinkMessage();
         }
 
 

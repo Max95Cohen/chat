@@ -65,6 +65,25 @@ class GeoPointMessage implements MessageInterface
         ];
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function deleteMessage(array $data, Redis $redis): array
+    {
+        MessageHelper::deleteMessageInRedis($data, $redis);
+        MessageHelper::updateMessageStatusInMysql($data, MessageHelper::MESSAGE_DELETED_STATUS);
+
+        return [
+            'message_id' => $data['message_id'],
+            'status' => MessageHelper::MESSAGE_DELETED_STATUS,
+            'chat_id' => $data['chat_id'],
+            'user_id' => $data['user_id'],
+        ];
+
+    }
+
 
 
 }

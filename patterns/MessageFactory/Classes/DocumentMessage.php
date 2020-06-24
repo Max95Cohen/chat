@@ -89,15 +89,22 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
      */
     public function editMessage($data, Redis $redis)
     {
-        MediaHelper::editInRedis($data, $redis);
-        MediaHelper::editInMysql($data);
+        MediaHelper::messageEditInRedis($data, $redis);
+        MediaHelper::messageEditInMysql($data);
         //@TODO тут будет логика для удаления старых файлов и.т.д
         return [
-            'message_id' => $data['message_id'],
-            'status' => MessageHelper::MESSAGE_EDITED_STATUS,
             'chat_id' => $data['chat_id'],
             'attachments' => $data['attachments'],
-            'user_id' => $data['user_id']
+            'attachment_url' => self::getMediaUrl(),
+            'message_id' => $data['message_id'],
+            'text' => $data['text'],
+            'user_id' => $data['user_id'],
+            'time' => $data['time'],
+            'avatar' => $redis->get("user:avatar:{$data['user_id']}") ?? '',
+            'user_name' => $redis->get("user:name:{$data['user_id']}") ?? '',
+            'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
+            'type' => $data['message_type'],
+            'edit' => 1,
         ];
     }
 

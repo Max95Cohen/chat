@@ -17,12 +17,28 @@ class TextMessage implements MessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
-        // текст сообщения без лишних пробелов
 
-        $messageTextWithNotDoubleSpaces = MessageHelper::deleteExtraSpaces($data['text']);
+        // проверяем есть ли в сообщении ссылки
+        $allLinks = [];
+        $linksData = [];
+        preg_match_all('#http[s]{0,1}:\/\/\S+#', $data['text'], $allLinks,PREG_PATTERN_ORDER);
+        $allLinks = $allLinks[0] ?? null;
+        $messageText = $data['text'];
+        //@TODO отрефакторить вынести в 1 метод
+        if ($allLinks) {
+            foreach ($allLinks as $link) {
+                $linksData[]['link'] = trim($link);
+                $messageText = str_replace($link,'',$messageText);
+            }
+            $redis->hSet($redisKey, 'links',json_encode($linksData));
+            $redis->hSet($redisKey, 'text',trim($messageText));
+            $redis->hSet($redisKey, 'type', MessageHelper::LINK_MESSAGE_TYPE);
+        }else{
+            $messageTextWithNotDoubleSpaces = MessageHelper::deleteExtraSpaces($data['text']);
+            $redis->hSet($redisKey, 'text', $messageTextWithNotDoubleSpaces);
+            $redis->hSet($redisKey, 'type', MessageHelper::TEXT_MESSAGE_TYPE);
+        }
 
-        $redis->hSet($redisKey, 'text', $messageTextWithNotDoubleSpaces);
-        $redis->hSet($redisKey, 'type', MessageHelper::TEXT_MESSAGE_TYPE);
     }
 
     /**
@@ -52,9 +68,15 @@ class TextMessage implements MessageInterface
         return [
             'message_id' => $data['message_id'],
             'status' => MessageHelper::MESSAGE_EDITED_STATUS,
-            'chat_id' => $data['chat_id'],
             'text' => $data['text'],
-            'user_id' => $data['user_id']
+            'user_id' => $data['user_id'],
+            'time' => $data['time'],
+            'chat_id' =>$data['chat_id'],
+            'avatar' => $redis->get("user:avatar:{$data['user_id']}") ?? '',
+            'user_name' => $redis->get("user:name:{$data['user_id']}") ?? '',
+            'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
+            'type' => $data['message_type'],
+            'edit' => 1,
         ];
     }
 
@@ -67,7 +89,6 @@ class TextMessage implements MessageInterface
     {
         MessageHelper::deleteMessageInRedis($data, $redis);
         MessageHelper::updateMessageStatusInMysql($data, MessageHelper::MESSAGE_DELETED_STATUS);
-
         return [
             'message_id' => $data['message_id'],
             'status' => MessageHelper::MESSAGE_DELETED_STATUS,
