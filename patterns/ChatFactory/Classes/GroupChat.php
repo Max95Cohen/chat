@@ -49,7 +49,8 @@ class GroupChat implements BaseChatCreateInterface
             'chat_name' => $data['chat_name'],
             'members_count' => count($userIds),
             'chat_id' => $chatId,
-            'avatar' => "@TODO  add avatar"
+            'avatar' => "@TODO  add avatar",
+            'type' => $data['type'],
         ];
     }
 }

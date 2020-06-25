@@ -5,6 +5,7 @@ namespace Controllers;
 use Helpers\ResponseFormatHelper;
 use Middlewars\Auth\CheckUserTokenMiddleware;
 use Middlewars\Permission\CheckPrivilegesForAddGroupChat;
+use Middlewars\Permission\CheckPrivilegesForDeleteMemberMiddleware;
 use Middlewars\Permission\CheckPrivilegesForMessageMiddleware;
 use Middlewars\Permission\CheckUserInChatMembersMiddleware;
 
@@ -89,6 +90,7 @@ class RouterController
         'chat:members:delete' =>[
             'action' => 'MemberController@deleteMembers',
             'params' => true,
+            'middleware' => [CheckPrivilegesForDeleteMemberMiddleware::class]
         ],
         'chat:members:add' =>[
             'action' => 'MemberController@addMembers',
@@ -100,6 +102,12 @@ class RouterController
             'action' => 'MemberController@checkExists',
             'params' => true,
         ],
+        'chat:member:leave' =>[
+            'action' => 'MemberController@chatLeave',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
+        ],
+
 
         //test
         'test:ping' => [

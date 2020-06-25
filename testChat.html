@@ -15,10 +15,11 @@
 
     // let socket = new WebSocket('ws://127.0.0.1:9502/');
     let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
+    let myUserId =113631;
 
     let chatList = false;
-    var user_id = 113631;
-    var chat_id =3;
+    var user_id = myUserId;
+    var chat_id =173;
     var userToken ='5e5ebf67feb34d6d4fc69fc96f95ff5166155aa7';
     var message_id = "message:113631:206";
 
@@ -72,37 +73,37 @@
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
 
-        let iCount = 1;
-        for (let i = 0; i<iCount;i++){
-            socket.send(JSON.stringify({
-                cmd: 'message:create',
-                data: {
-                    user_id:user_id,
-                    userToken: userToken,
-                    chat_id:chat_id,
-                    message_type:0,
-                    message_id:message_id,
-                    text:"sad text https://www.google.com/",
-                    // attachments:images,
-                }
-
-            }));
-
-        }
-
-        let RequestChatCount = Math.ceil(iCount / 20);
-        // console.log(RequestChatCount);
-        // for ( let j = 0; j<= RequestChatCount;j++) {
-            socket.send(JSON.stringify({
-                cmd: 'chat:get',
-                data: {
-                    user_id: user_id,
-                    chat_id:chat_id,
-                    page:1,
-                    // divider:1,
-                    userToken: userToken,
-                }
-            }));
+        // let iCount = 1;
+        // for (let i = 0; i<iCount;i++){
+        //     socket.send(JSON.stringify({
+        //         cmd: 'message:create',
+        //         data: {
+        //             user_id:user_id,
+        //             userToken: userToken,
+        //             chat_id:chat_id,
+        //             message_type:0,
+        //             message_id:message_id,
+        //             text:"sad text https://www.google.com/",
+        //             // attachments:images,
+        //         }
+        //
+        //     }));
+        //
+        // }
+        //
+        // let RequestChatCount = Math.ceil(iCount / 20);
+        // // console.log(RequestChatCount);
+        // // for ( let j = 0; j<= RequestChatCount;j++) {
+        //     socket.send(JSON.stringify({
+        //         cmd: 'chat:get',
+        //         data: {
+        //             user_id: user_id,
+        //             chat_id:chat_id,
+        //             page:1,
+        //             // divider:1,
+        //             userToken: userToken,
+        //         }
+        //     }));
         // }
 
         //message:deleted:all
@@ -168,10 +169,10 @@
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:delete',
         //     data: {
-        //         user_id: 1,
-        //         chat_id:27843,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         members:"13,40",
+        //         user_id: user_id,
+        //         chat_id:chat_id,
+        //         userToken: userToken,
+        //         member_id:113626,
         //     }
         //
         // }));
@@ -245,11 +246,22 @@
         //     data: {
         //         user_id: user_id,
         //         chat_id:chat_id,
-        //         members_id:'123,124,189,200',
+        //         members_id:'27887',
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
         // }));
+
+        socket.send(JSON.stringify({
+            cmd: 'chat:member:leave',
+            data: {
+                user_id: user_id,
+                chat_id:chat_id,
+                userToken: userToken,
+            }
+
+        }));
+
 
         //message:113631:208
 

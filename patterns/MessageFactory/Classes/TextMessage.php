@@ -30,7 +30,7 @@ class TextMessage implements MessageInterface
                 $linksData[]['link'] = trim($link);
                 $messageText = str_replace($link,'',$messageText);
             }
-            $redis->hSet($redisKey, 'links',json_encode($linksData));
+            $redis->hSet($redisKey, 'attachments',json_encode($linksData));
             $redis->hSet($redisKey, 'text',trim($messageText));
             $redis->hSet($redisKey, 'type', MessageHelper::LINK_MESSAGE_TYPE);
         }else{

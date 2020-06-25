@@ -69,7 +69,8 @@ class PrivateChat implements BaseChatCreateInterface
             'status' => 'true',
             'chat_name' => $anotherUserName,
             'chat_id' => $chatId,
-            'user_id' => $anotherUserId
+            'user_id' => $anotherUserId,
+            'type' => $data['type'],
         ];
 
 

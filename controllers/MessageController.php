@@ -29,7 +29,6 @@ class MessageController
      */
     public function create(array $data)
     {
-
         // у каждого юзера есть counter сообщений
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
@@ -88,7 +87,7 @@ class MessageController
 
         $messageClass = Factory::getItem($data['message_type']);
 
-        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
+//        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
 
         $responseData = $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis);
         $this->redis->close();

@@ -9,6 +9,7 @@ use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager as DB;
 use Patterns\ChatFactory\Factory;
+use Patterns\MessageStrategy\Classes\BannedStrategy;
 use Patterns\MessageStrategy\Classes\MysqlStrategy;
 use Patterns\MessageStrategy\Classes\RedisStrategy;
 use Patterns\MessageStrategy\Strategy;
@@ -24,8 +25,8 @@ class ChatController
     const CHANNEL = 2;
 
     const OWNER = 0;
-    const SUBSCRIBER = 1;
-    const ADMIN = 2;
+    const ADMIN = 1;
+    const SUBSCRIBER = 2;
 
     const BANNED = -1;
 
@@ -111,11 +112,34 @@ class ChatController
                 $lastMessageTime = $lastMessage['time'] ?? '';
 
                 //@TODO пока нужно потом отрефакторить
-                $chatUsers = $this->redis->zRange("chat:members:$userChatId", 0, -1);
+                $chatUsers = $this->redis->zRangeByScore("chat:members:$userChatId", self::OWNER, '+inf');
 
                 $anotherUsers = array_diff($chatUsers, [$data['user_id']]);
                 $anotherUserId = array_shift($anotherUsers);
                 //*****
+                // @TODO пока тут просто тупой if потом отрефакторю
+                $checkNotBanned = in_array($data['user_id'],$chatUsers);
+
+                $lastMessageData = [
+                    'message_id' => $lastMessageId ?? '',
+                    'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
+                    'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
+                    'text' => $lastMessageText ?? '',
+                    'time' => $lastMessageTime == "" ? $chatStartTime : $lastMessageTime,
+                    'type' => $type,
+                    'message_for_type' => $messageForType,
+                ];
+
+                if (!$checkNotBanned) {
+                    $bannedTime = $this->redis->get("user:delete:in:chat:{$data['user_id']}:{$userChatId}");
+                    $lastMessageData = [
+                        'text' => 'Вас исключили из группы',
+                        'type' => MessageHelper::SYSTEM_MESSAGE_TYPE,
+                        'message_for_type' => 'Вас исключили из группы',
+                        'time' => $bannedTime == false ? null : $bannedTime,
+                    ];
+                }
+
                 $responseData[] = [
                     'id' => $userChatId,
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
@@ -125,16 +149,11 @@ class ChatController
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
                     'avatar_url' => MessageHelper::AVATAR_URL,
                     'another_user_id' =>$anotherUserId,
-                    'last_message' => [
-                        'id' => $lastMessageId ?? '',
-                        'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
-                        'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
-                        'text' => $lastMessageText ?? '',
-                        'time' => $lastMessageTime == "" ? $chatStartTime : $lastMessageTime,
-                        'type' => $type,
-                        'message_for_type' => $messageForType,
-                    ],
+                    'last_message' => $lastMessageData
                 ];
+
+
+
 
             }
 
@@ -150,12 +169,15 @@ class ChatController
         $data['count'] = $data['count'] ?? 20;
         $chatId = $data['chat_id'];
 
-        $notifyUsers = $this->redis->zRange("chat:members:{$chatId}", 0, -1);
-        array_diff($notifyUsers, [$data['user_id']]);
-
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", '-inf', '+inf',['withscores' => true]);
         $strategy = new Strategy();
 
+        $checkBanned = $chatMembers[$data['user_id']] ?? null;
+
         $data['page'] <= 2 ? $strategy->setStrategy(new RedisStrategy()) : $strategy->setStrategy(new MysqlStrategy());
+        if ($checkBanned == self::BANNED) {
+            $strategy->setStrategy(new BannedStrategy());
+        }
 
         $responseData = $strategy->executeStrategy("getMessages", $data);
         $this->redis->close();

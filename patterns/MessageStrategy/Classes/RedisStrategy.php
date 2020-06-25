@@ -45,7 +45,7 @@ class RedisStrategy implements MessageStrategyInterface
                     $this->redis->multi();
                     $this->redis->set("chat:unwrite:count:{$chatId}",$unwriteCount);
 
-                    $this->redis->hSet($chatMessageId,'status', MessageControlleITE);r::WR
+                    $this->redis->hSet($chatMessageId,'status', MessageController::WRITE);
                 }
                 $this->redis->exec();
             }
