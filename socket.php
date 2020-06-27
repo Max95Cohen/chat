@@ -44,7 +44,6 @@ $server->on('message', function ($server, $frame) {
     $redis->connect('127.0.0.1', 6379);
 
     $requestData = (json_decode($frame->data, true));
-
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);

@@ -53,6 +53,26 @@ class MysqlStrategy
             $messageType = $message->type ?? 0;
             $replyMessageId = $message->reply_message_id ?? null;
 
+            if ($replyMessageId) {
+                $replyMessageType = $this->redis->hGet($replyMessageId,'type') ?? Manager::table('messages')
+                        ->where('redis_id',$replyMessageId)
+                        ->orWhere('id',$replyMessageId)
+                        ->value('type');
+                $replyMessageClass = Factory::getItem($replyMessageType);
+            }
+
+            $forwardMessageId = $message->forward_message_id;
+            $forwardData = null;
+            if ($forwardMessageId) {
+                $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id',$forwardMessageId)->first()->toArray();
+
+                $forwardData = [
+                    'user_id' => $forwardMessage['user_id'],
+                    'avatar' => $this->redis->get("user_avatar:{$forwardMessage['user_id']}"),
+                    'chat_id' => $forwardMessage['chat_id'],
+                    'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}")
+                ];
+            }
             $messageClass = Factory::getItem($messageType);
             $edit = $message->edit ?? 0;
 
@@ -60,6 +80,7 @@ class MysqlStrategy
                 'id' => strval($message->id),
                 'user_id' => $message->user_id,
                 'avatar' => $this->redis->get("user:avatar:{$message->user_id}"),
+                'phone' =>  $this->redis->get("user:phone:{$message->user_id}"),
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
                 'text' => $message->text ?? null,
@@ -68,11 +89,11 @@ class MysqlStrategy
                 'time' => $message->time,
                 'attachments' => $attachments,
                 'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
-                'reply_data' => $replyMessageId ? $messageClass->getOriginalDataForReply($message->id, $this->redis) : null,
+                'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
+                'forward_data' => $forwardData ? json_encode($forwardData) : null,
                 'write' =>(string) $message->status,
                 'edit' => $edit,
             ];
-            dump($message->user_id,$message->status);
             if ($message->status == MessageController::NO_WRITE && $message->user_id != $data['user_id']) {
                 $this->redis->watch("chat:unwrite:count:{$chatId}");
                 $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));

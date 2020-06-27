@@ -70,20 +70,21 @@ class UserController
 
         foreach ($chatMembers as $member) {
 
-            if ($this->redis->get("user:taping:{$chatId}:{$member}")){
+            if ($this->redis->get("user:taping:{$chatId}:{$member}")) {
                 $tapingMembers[] = [
                     'name' => $this->redis->get("user:name:{$member}") ?? '',
                     'chat_id' => $chatId,
                     'user_id' => $member,
                     'typing' => 1
                 ];
+
             }
 
         }
-        $notifyUsers = array_diff($chatMembers,[$data['user_id']]);
+        $notifyUsers = array_diff($chatMembers, [$data['user_id']]);
 
         $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$tapingMembers);
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $tapingMembers);
 
     }
 

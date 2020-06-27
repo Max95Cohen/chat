@@ -13,15 +13,16 @@
 
 <script>
 
-    // let socket = new WebSocket('ws://127.0.0.1:9502/');
-    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
+    let socket = new WebSocket('ws://127.0.0.1:9502/');
+    // let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
     let myUserId =113631;
+    let YerbolatUserId = 113629;
 
     let chatList = false;
     var user_id = myUserId;
-    var chat_id =173;
-    var userToken ='5e5ebf67feb34d6d4fc69fc96f95ff5166155aa7';
-    var message_id = "message:113631:206";
+    var chat_id =161;
+    var userToken ='0aa804c254cc569bae8a40d676011d1e01eb7c3e';
+    var message_id = "message:113631:4816";
 
     //908102
     socket.addEventListener('open', function (event) {
@@ -81,10 +82,9 @@
         //             user_id:user_id,
         //             userToken: userToken,
         //             chat_id:chat_id,
-        //             message_type:0,
+        //             message_type:10,
         //             message_id:message_id,
-        //             text:"sad text https://www.google.com/",
-        //             // attachments:images,
+        //             text:"sad text",
         //         }
         //
         //     }));
@@ -130,7 +130,7 @@
         //
         // }));
 
-        // получение всех чатов с пагинацией
+        // // получение всех чатов с пагинацией
         // socket.send(JSON.stringify({
         //     cmd: 'chats:get',
         //     data: {
@@ -215,15 +215,15 @@
 
 
         // выводит список пользователей из чата
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:members',
-        //     data: {
-        //         user_id: 30220,
-        //         chat_id:104,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:members',
+            data: {
+                user_id: user_id,
+                chat_id:12,
+                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+            }
+
+        }));
 
         // проверяет есть ли пользователь в чате
 
@@ -252,15 +252,15 @@
         //
         // }));
 
-        socket.send(JSON.stringify({
-            cmd: 'chat:member:leave',
-            data: {
-                user_id: user_id,
-                chat_id:chat_id,
-                userToken: userToken,
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:member:leave',
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id:chat_id,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
 
 
         //message:113631:208
@@ -277,6 +277,29 @@
         //         }
         //
         //     }));
+
+        // socket.send(JSON.stringify({
+        //         cmd: 'message:forward',
+        //         data: {
+        //             user_id: user_id,
+        //             chat_id:161,
+        //             forward_messages_id:"message:113631:4802",
+        //             message_id:message_id,
+        //             userToken:userToken,
+        //         }
+        //
+        //     }));
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:change:name',
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id:161,
+        //         chat_name:"новое имя для чата ае",
+        //         userToken:userToken,
+        //     }
+        //
+        // }));
 
     });
 

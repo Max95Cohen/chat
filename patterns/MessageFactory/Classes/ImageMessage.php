@@ -73,7 +73,7 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
 
 
         $image = new ImageResize($filePath);
-        $image->crop(200,200,true,ImageResize::CROPCENTER);
+        $image->crop(500,500,true,ImageResize::CROPCENTER);
         $image->save(self::getMediaDir() ."/{$resizeFileName}");
 
         return [

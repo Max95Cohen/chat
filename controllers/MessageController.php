@@ -53,8 +53,7 @@ class MessageController
 
         $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
 
-        $data['message_type'] = $this->redis->hGet($messageRedisKey,'type');
-        dump($data['message_type']);
+        $data['message_type'] = $this->redis->hGet($messageRedisKey, 'type');
         // добавляем сообщение в чат
 
         MessageHelper::addMessageInChat($this->redis, $chatId, $messageRedisKey);
@@ -79,11 +78,18 @@ class MessageController
         }
 
         // здесь добавляю в очередь на отправку уведомлений!!!!@TODO отрефакторить это
-
+        // пуш в новое приложение
         $this->redis->hSet("push:notify:{$userId}:{$messageId}", 'type', PushController::NOTIFY_CREATE_NEW_MESSAGE_IN_CHAT);
         $this->redis->hSet("push:notify:{$userId}:{$messageId}", 'link', "message:$userId:$messageId");
 
-        $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:{$userId}:{$messageId}");
+        // пуш в старое приложение
+        $this->redis->hSet("push:notify:old:{$userId}:{$messageId}", 'type', PushController::NOTIFY_CREATE_NEW_MESSAGE_IN_CHAT);
+        $this->redis->hSet("push:notify:old:{$userId}:{$messageId}", 'link', "message:$userId:$messageId");
+
+
+        // очередь для пуша старый андроид и новый
+        $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:old:android:{$userId}:{$messageId}");
+        $this->redis->zAdd("all:notify:old:android:queue", ['NX'], time(), "push:notify:old:{$userId}:{$messageId}");
 
         $messageClass = Factory::getItem($data['message_type']);
 
@@ -128,33 +134,33 @@ class MessageController
      * @param array $data
      * @return array
      */
-    public function edit(array $data) :array
+    public function edit(array $data): array
     {
-        $data = Factory::getItem($data['message_type'])->editMessage($data,$this->redis);
-        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
+        $data = Factory::getItem($data['message_type'])->editMessage($data, $this->redis);
+        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'], $this->redis);
         $this->redis->close();
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $data);
     }
 
     /**
      * @param array $data
      * @return array
      */
-    public function delete(array $data) :array
+    public function delete(array $data): array
     {
-        $checkRedis = $this->redis->hGet($data['message_id'],'type');
+        $checkRedis = $this->redis->hGet($data['message_id'], 'type');
 
-        $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
+        $messageType = $checkRedis === false ? Manager::table('messages')->where('id', $data['message_id'])->value('type') : $checkRedis;
 
-        $data =  Factory::getItem($messageType)->deleteMessage($data,$this->redis);
+        $data = Factory::getItem($messageType)->deleteMessage($data, $this->redis);
 
-        $this->redis->set("all:delete:{$data['message_id']}",1);
+        $this->redis->set("all:delete:{$data['message_id']}", 1);
 
-        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'],$this->redis);
+        $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'], $this->redis);
         $this->redis->close();
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$data);
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $data);
 
     }
 
@@ -162,18 +168,77 @@ class MessageController
      * @param array $data
      * @return array
      */
-    public function deleteSelf(array $data) :array
+    public function deleteSelf(array $data): array
     {
-        $checkRedis = $this->redis->hGet($data['message_id'],'type');
+        $checkRedis = $this->redis->hGet($data['message_id'], 'type');
 
-        $messageType = $checkRedis === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $checkRedis;
+        $messageType = $checkRedis === false ? Manager::table('messages')->where('id', $data['message_id'])->value('type') : $checkRedis;
 
-        $data = Factory::getItem($messageType)->deleteOne($data,$this->redis);
+        $data = Factory::getItem($messageType)->deleteOne($data, $this->redis);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$data);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $data);
 
     }
 
+
+    public function forward(array $data)
+    {
+        $forwardChatId = $data['chat_id'];
+        $userId = $data['user_id'];
+
+        $messageIds = explode(',', $data['forward_messages_id']);
+        // @TODO отрефакторить это собирать все id сообщений и делать 1 sql запрос пока пусть так для теста
+        $responseData = [];
+        foreach ($messageIds as $messageId) {
+            $redisForwardMessageData = $this->redis->hGetAll($messageId);
+            $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('id', $messageId)->first()->toArray() : $redisForwardMessageData;
+            $attachments = $messageData['attachments'] ?? null;
+            if ($messageData) {
+                // создать сообщение и добавить в чат
+
+                $messageId = $this->redis->incrBy("user:message:{$userId}", 1);
+                $this->redis->hSet($messageId, 'text', $messageData['text']);
+                $this->redis->hSet($messageId, 'chat_id', $forwardChatId);
+                $this->redis->hSet($messageId, 'user_id', $data['user_id']);
+                $this->redis->hSet($messageId, 'status', MessageController::NO_WRITE);
+                $this->redis->hSet($messageId, 'time', time());
+                $this->redis->hSet($messageId, 'type', MessageHelper::FORWARD_MESSAGE_TYPE);
+                $this->redis->hSet($messageId, 'attachments', $attachments);
+                $this->redis->hSet($messageId, 'forward_message_id', $messageId);
+
+                $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
+                $forwardData = [
+                    'user_id' => $messageData['user_id'],
+                    'avatar' => $avatar == false ? "noAvatar.png" : $avatar,
+                    'chat_id' => $messageData['chat_id'],
+                    'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}")
+                ];
+
+                $responseData[] =[
+                    'text' => $messageData['text'],
+                    'user_id' => $messageData['user_id'],
+                    'status' => MessageController::NO_WRITE,
+                    'time' => time(),
+                    'type' => MessageHelper::FORWARD_MESSAGE_TYPE,
+                    'attachments' => $attachments,
+                    'forward_message_id' => $messageId,
+                    'forward_data' => json_encode($forwardData)
+                ];
+
+                // добавляем сообщение в общий список сообщений
+
+                $this->redis->zAdd('all:messages', ['NX'], self::NO_WRITE, "message:$userId:$messageId");
+
+                MessageHelper::addMessageInChat($this->redis, $forwardChatId, $messageId);
+
+            }
+
+        }
+        dump($responseData);
+        $notifyUsers = ChatHelper::getChatMembers($forwardChatId,$this->redis);
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$responseData);
+
+    }
 
 
 }

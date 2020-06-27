@@ -24,8 +24,13 @@ class MemberController
     public function getChatMembers(array $data)
     {
         $chatId = $data['chat_id'];
+        $page = $data['page'] ?? 1;
+        $onePageChatCount = 20;
 
-        $membersId = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, '+inf', ['withscores' => true]);
+        $startChat = $onePageChatCount * $page - $onePageChatCount;
+        $endChat = $startChat + $onePageChatCount;
+
+        $membersId = $this->redis->zRevRangeByScore("chat:members:{$chatId}", "+inf", 0, ['limit' => [$startChat, $endChat], 'withscores' => true]);
         $responseData = [];
 
         foreach ($membersId as $memberId => $role) {
@@ -39,10 +44,14 @@ class MemberController
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:$memberId"),
                 'online' => $online,
-                'role' => strval($role),
+                'role' => strval(intval($role)),
                 'email' => $this->redis->get("user:email:{$memberId}") ?? '',
                 'phone' => $this->redis->get("user:phone:{$memberId}") ?? '',
             ];
+            usort($responseData, function ($a,$b){
+               return $a['role'] <=> $b['role'];
+            });
+
         }
         $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
@@ -164,6 +173,7 @@ class MemberController
             foreach ($membersId as $memberId) {
                 if (!array_key_exists($memberId, $chatMembers)) {
                     $this->redis->zAdd("user:chats:{$memberId}", ['NX'], time(), $data['chat_id']);
+                    $this->redis->zRem("chat:members:{$chatId}",$memberId);
                     $this->redis->zAdd("chat:members:{$chatId}", ['NX'], ChatController::SUBSCRIBER, $memberId);
 
                     // тут создается стандартное сообщение о том что пользователь добавлен в группу
@@ -191,7 +201,7 @@ class MemberController
             }
             Manager::table('chats')->where('id', $data['chat_id'])->increment('members_count', count($insertDataMysql));
 
-            Manager::table('chat_members')->updateOrInsert($insertDataMysql);
+            Manager::table('chat_members')->insert($insertDataMysql);
             $this->redis->close();
             return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
                 'status' => 'true',

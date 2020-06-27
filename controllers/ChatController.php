@@ -7,6 +7,7 @@ use Helpers\ChatHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
+use Illuminate\Database\Capsule\Manager;
 use Illuminate\Database\Capsule\Manager as DB;
 use Patterns\ChatFactory\Factory;
 use Patterns\MessageStrategy\Classes\BannedStrategy;
@@ -78,8 +79,7 @@ class ChatController
     {
 
         $page = $data['page'] ?? 1;
-        $onePageChatCount = 20;
-
+        $onePageChatCount = 30;
 
         $startChat = $onePageChatCount * $page - $onePageChatCount;
         $endChat = $startChat + $onePageChatCount;
@@ -118,7 +118,7 @@ class ChatController
                 $anotherUserId = array_shift($anotherUsers);
                 //*****
                 // @TODO пока тут просто тупой if потом отрефакторю
-                $checkNotBanned = in_array($data['user_id'],$chatUsers);
+                $checkNotBanned = in_array($data['user_id'], $chatUsers);
 
                 $lastMessageData = [
                     'message_id' => $lastMessageId ?? '',
@@ -139,6 +139,18 @@ class ChatController
                         'time' => $bannedTime == false ? null : $bannedTime,
                     ];
                 }
+                // @TODO временный костыль для фронтов (как же я их ненавижу)
+                if ($chat->type == ChatController::GROUP) {
+                    $chatMembers = $this->redis->zRangeByScore("chat:members:{$userChatId}", ChatController::OWNER, '+inf');
+                    foreach ($chatMembers as $chatMemberId) {
+                        $chatMembersData[] = [
+                            'name' => $this->redis->get("user:name:{$chatMemberId}"),
+                            'phone' => $this->redis->get("user:phone:{$chatMemberId}"),
+                            'avatar' => $this->redis->get("user:avatar:{$chatMemberId}"),
+                            'user_id' => $chatMemberId
+                        ];
+                    }
+                }
 
                 $responseData[] = [
                     'id' => $userChatId,
@@ -148,11 +160,11 @@ class ChatController
                     'members_count' => $chat->members_count,
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
                     'avatar_url' => MessageHelper::AVATAR_URL,
-                    'another_user_id' =>$anotherUserId,
-                    'last_message' => $lastMessageData
+                    'another_user_id' => $anotherUserId,
+                    'another_user_phone' => $this->redis->get("user:phone:{$anotherUserId}"),
+                    'last_message' => $lastMessageData,
+                    'members' => $chatMembersData ?? null
                 ];
-
-
 
 
             }
@@ -169,7 +181,7 @@ class ChatController
         $data['count'] = $data['count'] ?? 20;
         $chatId = $data['chat_id'];
 
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", '-inf', '+inf',['withscores' => true]);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", '-inf', '+inf', ['withscores' => true]);
         $strategy = new Strategy();
 
         $checkBanned = $chatMembers[$data['user_id']] ?? null;
@@ -213,6 +225,37 @@ class ChatController
             'status' => 'true',
             'pinned_count' => $pinnedCount
         ]);
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function changeChatName(array $data): array
+    {
+        $userId = $data['user_id'];
+        $chatId = $data['chat_id'];
+        $chatName = $data['chat_name'];
+
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, ChatController::OWNER);
+        $chatType = Manager::table('chats')->where('id', $chatId)->value('type');
+
+        if (in_array($userId, $chatMembers) && $chatType == ChatController::GROUP) {
+            Manager::table('chats')->where('id', $chatId)->update([
+                'name' => $chatName,
+            ]);
+            $notifyUsers = ChatHelper::getChatMembers($chatId, $this->redis);
+            return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
+                'status' => 'true',
+                'chat_name' => $chatName,
+                'chat_id' => $chatId
+            ]);
+        }
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
+            'status' => 'false',
+            'message' => 'только в группе можно менять имя и только владелец может'
+        ]);
+
     }
 
 

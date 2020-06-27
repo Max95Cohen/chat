@@ -19,7 +19,7 @@
             "Controllers\\": "controllers",
             "Helpers\\": "helpers",
             "Patterns\\": "patterns",
-            "Middlewars\\":"middlewars",
+            "Middlewars\\": "middlewars",
             "Traits\\": "traits"
         }
     },

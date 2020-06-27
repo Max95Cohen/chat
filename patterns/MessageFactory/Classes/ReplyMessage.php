@@ -21,6 +21,16 @@ class ReplyMessage implements MessageInterface
     public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
         $redis->hSet($redisKey,'reply_message_id',$data['message_id']);
+        $text = $data['text'] ?? null;
+        $attachments = $data['attachments'] ?? null;
+        if ($text) {
+            $redis->hSet($redisKey,'text',$text);
+        }
+        if ($attachments) {
+            $redis->hSet($redisKey,'attachments',$attachments);
+        }
+
+
     }
 
     /**
@@ -33,6 +43,8 @@ class ReplyMessage implements MessageInterface
     {
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
         $messageData['type'] = MessageHelper::REPLY_MESSAGE_TYPE;
+        $messageData['text'] = $data['text'] ?? null;
+        $messageData['attachments'] = $data['attachments'] ?? null;
 
         $originalMessageType = $redis->hGet($data['message_id'],'type');
         $originalMessageType = $originalMessageType === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $originalMessageType;
@@ -59,5 +71,22 @@ class ReplyMessage implements MessageInterface
             'user_id' => $data['user_id'],
         ];
 
+    }
+
+    public function getOriginalDataForReply($messageId, Redis $redis)
+    {
+        $messageDataInRedis = $redis->hGetAll($messageId);
+
+        $messageData = $messageDataInRedis == false
+            ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'text'])->toArray()
+            : $messageDataInRedis;
+        return [
+            'message_id' => $messageId,
+            'text' => $messageData['text'],
+            'type' => MessageHelper::REPLY_MESSAGE_TYPE,
+            'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
+            'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
+            'user_id' => $messageData['user_id'],
+        ];
     }
 }

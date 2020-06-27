@@ -49,6 +49,12 @@ class RouterController
             'params' => true,
         ],
 
+        'chat:change:name' => [
+            'action' => 'ChatController@changeChatName',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
+        ],
+
         //messageController
         'message:create' => [
             'action' => 'MessageController@create',
@@ -76,6 +82,13 @@ class RouterController
             'params' => true,
             'middleware' => [CheckUserTokenMiddleware::class,CheckPrivilegesForMessageMiddleware::class]
         ],
+
+        'message:forward' =>[
+            'action' => 'MessageController@forward',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class]
+        ],
+
 
         // memberController
 

@@ -22,6 +22,7 @@ class MessageHelper
     const REPLY_MESSAGE_TYPE = 10;
     const MONEY_MESSAGE_TYPE = 11;
     const LINK_MESSAGE_TYPE = 12;
+    const FORWARD_MESSAGE_TYPE = 13;
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
