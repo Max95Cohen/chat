@@ -5,6 +5,7 @@ namespace Patterns\MessageFactory\Classes;
 
 
 use Helpers\MessageHelper;
+use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
 use Redis;
 
@@ -66,4 +67,32 @@ class LinkMessage implements MessageInterface
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
         $redis->hSet($redisKey,'type',MessageHelper::LINK_MESSAGE_TYPE);
     }
+
+    /**
+     * @param $messageId
+     * @param Redis $redis
+     * @return array
+     */
+    public function getOriginalDataForReply($messageId, Redis $redis)
+    {
+        $messageDataInRedis = $redis->hGetAll($messageId);
+
+        $messageData = $messageDataInRedis == false
+            ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'attachments'])->toArray()
+            : $messageDataInRedis;
+        //@TODO преписать через хелперскую функию вынести туда общие для всех классов поля и черех ... собирать в 1 массив
+
+        $attachments = json_decode($messageData['attachments'],true);
+
+        return [
+            'message_id' => $messageId,
+            'type' => MessageHelper::LINK_MESSAGE_TYPE,
+            'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
+            'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
+            'user_id' => $messageData['user_id'],
+            'attachments' => array_shift($attachments),
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::LINK_MESSAGE_TYPE)
+        ];
+    }
+
 }

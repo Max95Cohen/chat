@@ -50,7 +50,6 @@ class MessageController
         // добавляем дополнительные параметры в зависимости от типа через фабрику
 
         $messageClass = Factory::getItem($data['message_type']);
-
         $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
 
         $data['message_type'] = $this->redis->hGet($messageRedisKey, 'type');

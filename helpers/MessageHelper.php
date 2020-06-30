@@ -161,6 +161,8 @@ class MessageHelper
                 return "Голосовое сообщение";
             case self::VIDEO_MESSAGE_TYPE:
                 return "видео";
+            case self::LINK_MESSAGE_TYPE:
+                return "ссылка";
         }
     }
 

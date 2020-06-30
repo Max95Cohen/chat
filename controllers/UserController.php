@@ -5,6 +5,7 @@ namespace Controllers;
 
 
 use Carbon\Carbon;
+use Helpers\MessageHelper;
 use Helpers\PhoneHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
@@ -27,7 +28,7 @@ class UserController
         $checkExist = $this->redis->zRangeByScore('users:phones', $phone, $phone, ['withscores' => true]);
         if (count($checkExist)) {
             $userId = array_key_first($checkExist);
-            $avatar = $this->redis->get("user:avatar:{$data['user_id']}");
+            $avatar = $this->redis->get("user:avatar:{$userId}");
 
             $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");
             $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userId}") : $chatId;
@@ -41,7 +42,7 @@ class UserController
                 'user_id' => $userId,
                 'avatar' => $avatar,
                 'name' => $name,
-                'avatar_url' => 'https://media.indigo24.com/avatars/',
+                'avatar_url' => MessageHelper::AVATAR_URL,
                 'chat_id' => $chatId,
                 'online' => $online
             ]);

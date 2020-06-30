@@ -16,37 +16,45 @@ class RouterController
         'init' => [
             'action' => 'AuthController@init',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
         'user:check' => [
             'action' => 'UserController@checkExist',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
         'user:writing' => [
             'action' => 'UserController@writing',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'user:check:online' => [
             'action' => 'UserController@checkOnline',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
         //ChatController
         'chat:create' => [
             'action' => 'ChatController@create',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
         'chats:get' => [
             'action' => 'ChatController@getAll',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
         'chat:get' => [
             'action' => 'ChatController@getOne',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'chat:members' => [
             'action' => 'ChatController@getChatMembers',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
         'chat:change:name' => [
@@ -65,6 +73,7 @@ class RouterController
         'message:write' => [
             'action' => 'MessageController@write',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'message:edit' => [
             'action' => 'MessageController@edit',
@@ -95,10 +104,12 @@ class RouterController
         'chat:members' => [
             'action' => 'MemberController@getChatMembers',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'chat:members:privileges' =>[
             'action' => 'MemberController@changeUserPrivileges',
             'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class,CheckUserInChatMembersMiddleware::class],
         ],
         'chat:members:delete' =>[
             'action' => 'MemberController@deleteMembers',
@@ -151,13 +162,11 @@ class RouterController
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
             $middlewars = $route['middleware'] ?? null;
-
             if (is_array($middlewars)) {
                 foreach ($middlewars as $middlewar) {
                     $middlewareNamespace = $middlewar;
                     $middlewareClass = new $middlewareNamespace;
                     $middlewareResponse = $middlewareClass->handle($params);
-
                     if ($middlewareClass->isNext() !==false) {
                         continue;
                     }

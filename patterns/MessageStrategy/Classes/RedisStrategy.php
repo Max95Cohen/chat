@@ -88,6 +88,8 @@ class RedisStrategy implements MessageStrategyInterface
                     ];
                 }
 
+                $messageAnotherUserId = $message['another_user_id'] ?? null;
+
                 $messagesForDivider[] = [
                     'id' => $chatMessageId,
                     'user_id' => $message['user_id'],
@@ -106,6 +108,9 @@ class RedisStrategy implements MessageStrategyInterface
                     'write' => $message['status'],
                     'day' => date('d-m-Y', (int)$message['time']),
                     'edit' => $edit,
+                    'another_user_id' => $messageAnotherUserId,
+                    'another_user_avatar' => $messageAnotherUserId ? $this->redis->get("user:avatar:{$messageAnotherUserId}") : null,
+                    'another_user_name' => $messageAnotherUserId ? $this->redis->get("user:name:{$messageAnotherUserId}") : null,
                 ];
             }
 

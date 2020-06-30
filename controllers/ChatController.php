@@ -79,7 +79,7 @@ class ChatController
     {
 
         $page = $data['page'] ?? 1;
-        $onePageChatCount = 30;
+        $onePageChatCount = 20;
 
         $startChat = $onePageChatCount * $page - $onePageChatCount;
         $endChat = $startChat + $onePageChatCount;

@@ -13,15 +13,15 @@
 
 <script>
 
-    let socket = new WebSocket('ws://127.0.0.1:9502/');
-    // let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
+    // let socket = new WebSocket('ws://127.0.0.1:9502/');
+    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
     let myUserId =113631;
     let YerbolatUserId = 113629;
 
     let chatList = false;
     var user_id = myUserId;
-    var chat_id =161;
-    var userToken ='0aa804c254cc569bae8a40d676011d1e01eb7c3e';
+    var chat_id =234;
+    var userToken ='517b2ad6b5d4f9ad62cd4a9f870b70c9d807a2a2';
     var message_id = "message:113631:4816";
 
     //908102
@@ -51,9 +51,9 @@
         // socket.send(JSON.stringify({
         //     cmd: 'user:check',
         //     data: {
-        //         user_id: 1,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         phone:'77000000006',
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //         phone:'77752222422',
         //     }
         //
         // }));
@@ -81,10 +81,9 @@
         //         data: {
         //             user_id:user_id,
         //             userToken: userToken,
+        //             payment_chat_token:'jlcH5i1rqAXpmaYBmAWVv7BgU',
         //             chat_id:chat_id,
-        //             message_type:10,
-        //             message_id:message_id,
-        //             text:"sad text",
+        //             message_type:11,
         //         }
         //
         //     }));
@@ -94,16 +93,16 @@
         // let RequestChatCount = Math.ceil(iCount / 20);
         // // console.log(RequestChatCount);
         // // for ( let j = 0; j<= RequestChatCount;j++) {
-        //     socket.send(JSON.stringify({
-        //         cmd: 'chat:get',
-        //         data: {
-        //             user_id: user_id,
-        //             chat_id:chat_id,
-        //             page:1,
-        //             // divider:1,
-        //             userToken: userToken,
-        //         }
-        //     }));
+            socket.send(JSON.stringify({
+                cmd: 'chat:get',
+                data: {
+                    user_id: user_id,
+                    chat_id:chat_id,
+                    page:1,
+                    // divider:1,
+                    userToken: userToken,
+                }
+            }));
         // }
 
         //message:deleted:all
@@ -215,15 +214,15 @@
 
 
         // выводит список пользователей из чата
-        socket.send(JSON.stringify({
-            cmd: 'chat:members',
-            data: {
-                user_id: user_id,
-                chat_id:12,
-                userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:members',
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id:12,
+        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //     }
+        //
+        // }));
 
         // проверяет есть ли пользователь в чате
 
