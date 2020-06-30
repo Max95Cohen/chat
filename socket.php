@@ -2,6 +2,7 @@
 
 use Carbon\Carbon;
 use Controllers\RouterController;
+use Helpers\ConfigHelper;
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -12,15 +13,17 @@ $server = new swoole_websocket_server("127.0.0.1", 9502);
 $capsule = new Illuminate\Database\Capsule\Manager();
 const MEDIA_URL = 'http://media.loc/';
 
+$config = ConfigHelper::getDbConfig('chat_db');
+
 $capsule->addConnection([
-    'driver' => 'mysql',
-    'host' => 'localhost',
-    'database' => 'chat',
-    'username' => 'admin',
-    'password' => '123',
-    'charset' => 'utf8',
-    'collation' => 'utf8_unicode_ci',
-    'prefix' => '',
+    'driver' => $config['driver'],
+    'host' => $config['host'],
+    'database' => $config['database'],
+    'username' => $config['username'],
+    'password' => $config['password'],
+    'charset' => $config['charset'],
+    'collation' => $config['collation'],
+    'prefix' => $config['prefix'],
 ]);
 
 //$server->set([

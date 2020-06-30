@@ -3,18 +3,20 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 
+use Helpers\ConfigHelper;
 use Illuminate\Database\Capsule\Manager as DB;
 
+$config = ConfigHelper::getDbConfig('mobile_db');
+
 $capsule->addConnection([
-    'driver' => 'mysql',
-    'host' => 'localhost',
-//    'database' => 'indigo24Mobile',
-    'database' => 'chat',
-    'username' => 'admin',
-    'password' => '123',
-    'charset' => 'utf8',
-    'collation' => 'utf8_unicode_ci',
-    'prefix' => '',
+    'driver' => $config['driver'],
+    'host' => $config['host'],
+    'database' => $config['database'],
+    'username' => $config['username'],
+    'password' => $config['password'],
+    'charset' => $config['charset'],
+    'collation' => $config['collation'],
+    'prefix' => $config['prefix'],
 ]);
 
 $capsule->setAsGlobal();
