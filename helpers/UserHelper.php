@@ -83,7 +83,7 @@ class UserHelper
      */
     public static function checkPrivilegesForAdminAndOwner(int $userId, int $chatId, Redis $redis)
     {
-        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",ChatController::OWNER,'+inf',['withscores' => true]);
+        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",0,'+inf',['withscores' => true]);
         $userRole = !is_null($chatMembers[$userId]) ? intval($chatMembers[$userId]) : null;
 
         return in_array($userRole,ChatController::getRolesForAdministrators());

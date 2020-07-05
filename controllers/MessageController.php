@@ -87,7 +87,7 @@ class MessageController
 
 
         // очередь для пуша старый андроид и новый
-        $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:old:android:{$userId}:{$messageId}");
+        $this->redis->zAdd("all:notify:queue", ['NX'], time(), "push:notify:{$userId}:{$messageId}");
         $this->redis->zAdd("all:notify:old:android:queue", ['NX'], time(), "push:notify:old:{$userId}:{$messageId}");
 
         $messageClass = Factory::getItem($data['message_type']);

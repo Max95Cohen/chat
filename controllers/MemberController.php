@@ -70,21 +70,21 @@ class MemberController
         $role = $data['role'];
         dump("work change");
         $membersForChange = explode(',', $data['members']);
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 3);
-
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0,ChatController::OWNER, ['withscores' => true]);
         $checkAdmin = array_search($userId, $chatMembers);
         $checkMembersForChange = array_intersect($membersForChange, $chatMembers);
-        dump($checkMembersForChange);
         $changeUsers = [];
-        dump($checkAdmin);
         //@TODO подключить middleware
         if ($checkAdmin === ChatController::OWNER && in_array($role, ChatController::getRolesForOwner())) {
-            foreach ($checkMembersForChange as $memberForChange) {
-                $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberForChange);
-                $changeUsers[] = [
-                    'user_id' => $memberForChange,
-                    'role' => $role,
-                ];
+            foreach ($chatMembers as $memberForChange) {
+                $member = $chatMembers[$memberForChange] ?? null;
+                if ($member){
+                    $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberForChange);
+                    $changeUsers[] = [
+                        'user_id' => $memberForChange,
+                        'role' => $role,
+                    ];
+                }
             }
 
             return ResponseFormatHelper::successResponseInCorrectFormat($chatMembers, [
@@ -132,7 +132,7 @@ class MemberController
         //создание сообщения об удалении пользователя
         $delMessageRedisKey = "user:delete:chat:{$chatId}:{$bannedMemberId}";
         $this->redis->hSet($delMessageRedisKey, 'user_id', 13);
-        $this->redis->hSet($delMessageRedisKey, 'text', "$adminName выгнал(а) $deletedMemberName из группы");
+        $this->redis->hSet($delMessageRedisKey, 'text', "$adminName исключил(а) $deletedMemberName из группы");
         $this->redis->hSet($delMessageRedisKey, 'chat_id', $chatId);
         $this->redis->hSet($delMessageRedisKey, 'status', 1);
         $this->redis->hSet($delMessageRedisKey, 'time', $bannedTime - 1);
@@ -162,8 +162,9 @@ class MemberController
         $membersId = array_unique(explode(',', $data['members_id']));
         $userId = $data['user_id'];
 
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 3, ['withscores' => true]);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0,ChatController::OWNER, ['withscores' => true]);
         $userRole = (int)$chatMembers[$userId] ?? 'not allowed';
+        dump($chatMembers);
 
         // @TODO вынести в отдельный middleware
         $checkAdmin = in_array($userRole, ChatController::getRolesForAdministrators());

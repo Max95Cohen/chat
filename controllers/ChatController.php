@@ -25,8 +25,8 @@ class ChatController
     const GROUP = 1;
     const CHANNEL = 2;
 
-    const OWNER = 0;
-    const ADMIN = 1;
+    const OWNER = 100;
+    const ADMIN = 50;
     const SUBSCRIBER = 2;
 
     const BANNED = -1;
@@ -102,7 +102,8 @@ class ChatController
 
             if ($chat) {
                 $chatStartTime = $this->redis->zRange("chat:{$userChatId}", 0, 0, true);
-                $chatStartTime = (int)array_shift($chatStartTime);
+                $chatStartTime = $chatStartTime == false ? "" : (int)array_shift($chatStartTime);
+
 
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
                 $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
@@ -112,7 +113,7 @@ class ChatController
                 $lastMessageTime = $lastMessage['time'] ?? '';
 
                 //@TODO пока нужно потом отрефакторить
-                $chatUsers = $this->redis->zRangeByScore("chat:members:$userChatId", self::OWNER, '+inf');
+                $chatUsers = $this->redis->zRangeByScore("chat:members:$userChatId", 0, self::OWNER);
 
                 $anotherUsers = array_diff($chatUsers, [$data['user_id']]);
                 $anotherUserId = array_shift($anotherUsers);
@@ -138,18 +139,6 @@ class ChatController
                         'message_for_type' => 'Вас исключили из группы',
                         'time' => $bannedTime == false ? null : $bannedTime,
                     ];
-                }
-                // @TODO временный костыль для фронтов (как же я их ненавижу)
-                if ($chat->type == ChatController::GROUP) {
-                    $chatMembers = $this->redis->zRangeByScore("chat:members:{$userChatId}", ChatController::OWNER, '+inf');
-                    foreach ($chatMembers as $chatMemberId) {
-                        $chatMembersData[] = [
-                            'name' => $this->redis->get("user:name:{$chatMemberId}"),
-                            'phone' => $this->redis->get("user:phone:{$chatMemberId}"),
-                            'avatar' => $this->redis->get("user:avatar:{$chatMemberId}"),
-                            'user_id' => $chatMemberId
-                        ];
-                    }
                 }
 
                 $responseData[] = [
@@ -181,7 +170,7 @@ class ChatController
         $data['count'] = $data['count'] ?? 20;
         $chatId = $data['chat_id'];
 
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", '-inf', '+inf', ['withscores' => true]);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, '+inf', ['withscores' => true]);
         $strategy = new Strategy();
 
         $checkBanned = $chatMembers[$data['user_id']] ?? null;
