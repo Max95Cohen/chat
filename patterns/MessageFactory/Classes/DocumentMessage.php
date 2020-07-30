@@ -48,6 +48,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         return [
             'data' => [
                 'status' => true,
+                'extension' =>$extension,
                 'media_url' => self::getMediaUrl(),
                 'file_name' => $fileName,
             ],
@@ -63,6 +64,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
         $redis->hSet($redisKey,'type',MessageHelper::DOCUMENT_MESSAGE_TYPE);
+        $redis->hSet($redisKey,'extension',$data['extension']);
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
@@ -79,6 +81,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::DOCUMENT_MESSAGE_TYPE;
+        $messageData['extension'] = $redis->hGet($messageRedisKey,'extension');
         return $messageData;
     }
 

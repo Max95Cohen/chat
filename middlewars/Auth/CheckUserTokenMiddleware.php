@@ -23,7 +23,7 @@ class CheckUserTokenMiddleware implements BaseMiddlewareInterface
     {
         if (UserHelper::CheckUserToken($data['userToken'],$data['user_id'],$this->redis) == false) {
             $this->redis->close();
-            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ["success" => false, "message" => 'нужно авторизоваться токен устарел']);
+            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ["success" => false, "message" => 'нужно авторизоваться токен устарел', 'logout'  => true]);
         }
 
         $this->setNext(true);

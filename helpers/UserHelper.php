@@ -2,6 +2,7 @@
 
 
 namespace Helpers;
+
 use Carbon\Carbon;
 use Controllers\ChatController;
 use Controllers\UserController;
@@ -20,27 +21,27 @@ class UserHelper
     public static function checkToken($userId, $token)
     {
         $redis = new Redis();
-        $redis->connect('127.0.0.1',6379);
+        $redis->connect('127.0.0.1', 6379);
 
-        return $redis->hGet($userId,'token') == $token ? true : null;
+        return $redis->hGet($userId, 'token') == $token ? true : null;
 
     }
 
-    public static function checkOnline($userId,Redis $redis)
+    public static function checkOnline($userId, Redis $redis)
     {
         $offline = $redis->get("user:last:visit:{$userId}");
         $lastVisitDate = 'online';
 
-        if ($offline != UserController::USER_ONLINE && $offline !=false) {
-            $date = date('Y-m-d H:i:s',$offline);
+        if ($offline != UserController::USER_ONLINE && $offline != false) {
+            $date = date('Y-m-d H:i:s', $offline);
             $messageCreatedDate = new Carbon($date);
-            $lastVisitDate =$messageCreatedDate->diffForHumans(Carbon::now());
+            $lastVisitDate = $messageCreatedDate->diffForHumans(Carbon::now());
 
-            $lastVisitDate = preg_replace('#до#','назад',$lastVisitDate);
+            $lastVisitDate = preg_replace('#до#', 'назад', $lastVisitDate);
 
         }
 
-        if($offline ==false){
+        if ($offline == false) {
             $lastVisitDate = 'offline';
         }
 
@@ -55,9 +56,9 @@ class UserHelper
      * @param Redis $redis
      * @return bool
      */
-    public static function CheckUserToken(string $frontEndToken, int $userId, Redis $redis) :bool
+    public static function CheckUserToken(string $frontEndToken, int $userId, Redis $redis): bool
     {
-        return $redis->hGet("Customer:{$userId}",'unique') == $frontEndToken;
+        return $redis->hGet("Customer:{$userId}", 'unique') == $frontEndToken;
     }
 
 
@@ -69,9 +70,9 @@ class UserHelper
      */
     public static function CheckUserInChatMembers(int $userId, int $chatId, Redis $redis)
     {
-        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",0,'+inf');
+        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}", 0, '+inf');
 
-        return in_array($userId,$chatMembers);
+        return in_array($userId, $chatMembers);
     }
 
 
@@ -83,11 +84,23 @@ class UserHelper
      */
     public static function checkPrivilegesForAdminAndOwner(int $userId, int $chatId, Redis $redis)
     {
-        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}",0,'+inf',['withscores' => true]);
+        $chatMembers = $redis->zRangeByScore("chat:members:{$chatId}", 0, '+inf', ['withscores' => true]);
         $userRole = !is_null($chatMembers[$userId]) ? intval($chatMembers[$userId]) : null;
 
-        return in_array($userRole,ChatController::getRolesForAdministrators());
+        return in_array($userRole, ChatController::getRolesForAdministrators());
 
+    }
+
+
+    /**
+     * @param int $userId
+     * @param Redis $redis
+     * @return string
+     */
+    public static function getUserAvatar(int $userId, Redis $redis) :string
+    {
+        $avatar = $redis->get("user:avatar:{$userId}");
+        return $avatar == false ? 'noAvatar.png' : $avatar;
     }
 
 

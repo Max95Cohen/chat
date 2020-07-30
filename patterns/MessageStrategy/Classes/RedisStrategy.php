@@ -89,6 +89,9 @@ class RedisStrategy implements MessageStrategyInterface
                 }
 
                 $messageAnotherUserId = $message['another_user_id'] ?? null;
+                $extension = $message['extension'] ?? null;
+                $messageTime = $message['time'] ?? $chatStartTime;
+
 
                 $messagesForDivider[] = [
                     'id' => $chatMessageId,
@@ -99,8 +102,9 @@ class RedisStrategy implements MessageStrategyInterface
                     'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                     'text' => $message['text'] ?? null,
                     'type' => $message['type'] ?? 0,
-                    'chat_id' => $message['chat_id'],
-                    'time' => $message['time'] ?? $chatStartTime,
+                    'chat_id' => $message['chat_id'] ?? null,
+                    'extension' => $extension == false ? null : $extension,
+                    'time' => $messageTime,
                     'attachments' => $attachments,
                     'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                     'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,

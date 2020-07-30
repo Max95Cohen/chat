@@ -110,6 +110,7 @@ class ChatController
                 $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
 
                 $lastMessageText = $lastMessage['text'] ?? null;
+                $lastMessageText = $type == MessageHelper::MONEY_MESSAGE_TYPE ? '' : $lastMessageText;
                 $lastMessageTime = $lastMessage['time'] ?? '';
 
                 //@TODO пока нужно потом отрефакторить

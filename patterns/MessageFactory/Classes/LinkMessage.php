@@ -38,7 +38,7 @@ class LinkMessage implements MessageInterface
         dump($linksData);
 
         $messageData['text'] = $messageText;
-        $messageData['attachments'] = json_decode($linksData);
+        $messageData['attachments'] = json_encode($linksData);
         $messageData['type'] = MessageHelper::LINK_MESSAGE_TYPE;
         return $messageData;
     }

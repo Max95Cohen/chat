@@ -25,9 +25,9 @@ class UserController
 
         $phone = PhoneHelper::replaceForSeven($phone);
 
-        $checkExist = $this->redis->zRangeByScore('users:phones', $phone, $phone, ['withscores' => true]);
-        if (count($checkExist)) {
-            $userId = array_key_first($checkExist);
+        $checkExist = $this->redis->get("user:phone:{$phone}");
+        if ($checkExist) {
+            $userId = (int)$checkExist;
             $avatar = $this->redis->get("user:avatar:{$userId}");
 
             $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");

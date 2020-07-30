@@ -102,6 +102,7 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
         $redis->hSet($redisKey,'type',MessageHelper::IMAGE_MESSAGE_TYPE);
+        $redis->hSet($redisKey,'mime_type',$data['mime_type']);
 
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }

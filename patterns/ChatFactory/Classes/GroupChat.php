@@ -24,6 +24,7 @@ class GroupChat implements BaseChatCreateInterface
     {
         $userIds = explode(',', $data['user_ids']);
         array_push($userIds, $data['user_id']);
+        $userIds = array_unique($userIds);
         $membersCount = count($userIds);
 
 

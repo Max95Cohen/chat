@@ -14,14 +14,14 @@ nfv
 <script>
 
     // let socket = new WebSocket('ws://127.0.0.1:9502/');
-    let socket = new WebSocket('wss://chat.indigo24.com:9502');
+    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
     let myUserId =113631;
     let YerbolatUserId = 113629;
 
     let chatList = false;
     var user_id = myUserId;
     var chat_id =234;
-    var userToken ='517b2ad6b5d4f9ad62cd4a9f870b70c9d807a2a2';
+    var userToken ='7fbe87b9c5225b45c8ed9661d3cc25204bafc5cc';
     var message_id = "message:113631:4816";
 
     //908102
@@ -39,8 +39,8 @@ nfv
         // socket.send(JSON.stringify({
         //     cmd: 'test:ping',
         //     data: {
-        //         user_id: 30220,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         user_id: 105744,
+        //         userToken: "90dbbcea8dc03012b3194b7b7cbf96d2946523f5",
         //     }
         //
         // }));
@@ -81,9 +81,10 @@ nfv
         //         data: {
         //             user_id:user_id,
         //             userToken: userToken,
-        //             payment_chat_token:'jlcH5i1rqAXpmaYBmAWVv7BgU',
         //             chat_id:chat_id,
-        //             message_type:11,
+        //             message_type:2,
+        //             attachments:'[{"filename": "PHnUELkvwtZfWYkGeSmfNIRmQiVeNo6.mp4" }',
+        //             file_id:321,
         //         }
         //
         //     }));
@@ -93,16 +94,16 @@ nfv
         // let RequestChatCount = Math.ceil(iCount / 20);
         // // console.log(RequestChatCount);
         // // for ( let j = 0; j<= RequestChatCount;j++) {
-            socket.send(JSON.stringify({
-                cmd: 'chat:get',
-                data: {
-                    user_id: user_id,
-                    chat_id:chat_id,
-                    page:1,
-                    // divider:1,
-                    userToken: userToken,
-                }
-            }));
+        //     socket.send(JSON.stringify({
+        //         cmd: 'chat:get',
+        //         data: {
+        //             user_id: user_id,
+        //             chat_id:chat_id,
+        //             page:1,
+        //             // divider:1,
+        //             userToken: userToken,
+        //         }
+        //     }));
         // }
 
         //message:deleted:all
@@ -299,6 +300,18 @@ nfv
         //     }
         //
         // }));
+
+        socket.send(JSON.stringify({
+            cmd: 'chat:member:search',
+            data: {
+                user_id: user_id,
+                chat_id:161,
+                search:"77759112603",
+                userToken:userToken,
+            }
+
+        }));
+
 
     });
 

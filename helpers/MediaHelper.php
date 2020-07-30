@@ -125,12 +125,14 @@ class MediaHelper
         return '.'.explode('/',$type)[1];
     }
 
+
     /**
      * @param array $data
+     * @return int
      */
     public static function saveUploadHistory(array $data)
     {
-        Manager::table('user_uploads')->insert($data);
+        return Manager::table('user_uploads')->insertGetId($data);
     }
 
     public static function getMediaExtension()

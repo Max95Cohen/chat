@@ -9,6 +9,7 @@ use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager;
+use Illuminate\Support\Str;
 use Redis;
 use Traits\RedisTrait;
 
@@ -286,6 +287,44 @@ class MemberController
         ]);
 
     }
+
+    public function searchInChat(array $data)
+    {
+        $chatId = $data['chat_id'];
+        $chatMembersId = $this->redis->zRange("chat:members:{$chatId}",0,-1,true);
+        $search = $data['search'];
+
+        $members = [];
+
+
+        foreach ($chatMembersId as $memberId => $role) {
+            $online = UserHelper::checkOnline($memberId, $this->redis);
+            $members[] = [
+                'user_id' => $memberId,
+                'chat_id' => $chatId,
+                'avatar' => UserHelper::getUserAvatar($memberId,$this->redis),
+                'avatar_url' => MessageHelper::AVATAR_URL,
+                'user_name' => $this->redis->get("user:name:$memberId"),
+                'online' => $online,
+                'role' => strval(intval($role)),
+                'email' => $this->redis->get("user:email:{$memberId}") ?? '',
+                'phone' => $this->redis->get("user:phone:{$memberId}") ?? '',
+            ];
+        }
+
+        $searchUsers = collect($members)->filter(function ($member) use ($search) {
+            $memberName = mb_strtolower($member['user_name']);
+            $search = mb_strtolower($search);
+            return
+                Str::startsWith($member['phone'],$search) ||
+                Str::startsWith($memberName,$search);
+        })->values()->all();
+        dump($searchUsers);
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$searchUsers);
+
+    }
+
 
 
 }

@@ -39,7 +39,6 @@ class MysqlStrategy
             ->skip(($data['page'] * $data['count']) - $data['count'])
             ->take($data['count'])
             ->get();
-//        dump($allMessages);
 
         $firstMessageId = $allMessages->first() ? $allMessages->first()->id : null;
         $lastMessageId = $allMessages->last() ? $allMessages->last()->id : null;
@@ -54,9 +53,9 @@ class MysqlStrategy
             $replyMessageId = $message->reply_message_id ?? null;
 
             if ($replyMessageId) {
-                $replyMessageType = $this->redis->hGet($replyMessageId,'type') ?? Manager::table('messages')
-                        ->where('redis_id',$replyMessageId)
-                        ->orWhere('id',$replyMessageId)
+                $replyMessageType = $this->redis->hGet($replyMessageId, 'type') ?? Manager::table('messages')
+                        ->where('redis_id', $replyMessageId)
+                        ->orWhere('id', $replyMessageId)
                         ->value('type');
                 $replyMessageClass = Factory::getItem($replyMessageType);
             }
@@ -64,7 +63,7 @@ class MysqlStrategy
             $forwardMessageId = $message->forward_message_id;
             $forwardData = null;
             if ($forwardMessageId) {
-                $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id',$forwardMessageId)->first()->toArray();
+                $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id', $forwardMessageId)->first()->toArray();
 
                 $forwardData = [
                     'user_id' => $forwardMessage['user_id'],
@@ -77,10 +76,10 @@ class MysqlStrategy
             $edit = $message->edit ?? 0;
 
             $messagesForDivider[] = [
-                'id' => strval($message->id),
+                'id' => strval($message->redis_id),
                 'user_id' => $message->user_id,
                 'avatar' => $this->redis->get("user:avatar:{$message->user_id}"),
-                'phone' =>  $this->redis->get("user:phone:{$message->user_id}"),
+                'phone' => $this->redis->get("user:phone:{$message->user_id}"),
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:{$message->user_id}"),
                 'text' => $message->text ?? null,
@@ -88,10 +87,10 @@ class MysqlStrategy
                 'type' => $messageType,
                 'time' => $message->time,
                 'attachments' => $attachments,
-                'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
+                'attachment_url' => method_exists($messageClass, 'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                 'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
                 'forward_data' => $forwardData ? json_encode($forwardData) : null,
-                'write' =>(string) $message->status,
+                'write' => (string)$message->status,
                 'edit' => $edit,
             ];
             if ($message->status == MessageController::NO_WRITE && $message->user_id != $data['user_id']) {
@@ -99,9 +98,9 @@ class MysqlStrategy
                 $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));
                 dump($unwriteCount);
                 if ($unwriteCount > 0) {
-                    $unwriteCount-=1;
+                    $unwriteCount -= 1;
                     $this->redis->multi();
-                    $this->redis->set("chat:unwrite:count:{$chatId}",$unwriteCount);
+                    $this->redis->set("chat:unwrite:count:{$chatId}", $unwriteCount);
                     $this->redis->exec();
                 }
             }
@@ -112,12 +111,11 @@ class MysqlStrategy
         if ($allMessages->last()) {
             if ($allMessages->last()->user_id != $data['user_id']) {
                 Manager::table('messages')
-                    ->where('id','>=',$firstMessageId)
-                    ->where('id','<=',$lastMessageId)
+                    ->where('id', '>=', $firstMessageId)
+                    ->where('id', '<=', $lastMessageId)
                     ->update(['status' => MessageController::WRITE]);
             }
         }
-
 
 
         $this->redis->close();

@@ -28,7 +28,6 @@ $capsule->addConnection([
 
 $capsule->setAsGlobal();
 
-
 $mediaUrl = 'http://media.loc/files';
 
 $http->on('request', function ($request, $response) {
@@ -39,15 +38,15 @@ $http->on('request', function ($request, $response) {
         $responseData = MessageFactory::getItem($request->post['type'])->upload($request);
 
         // сохраняю в истории загрузок пользователя
-        MediaHelper::saveUploadHistory([
+        $fileId = MediaHelper::saveUploadHistory([
             'user_id' => $request->post['user_id'],
-            'mime_type' => $request->files['file']['type'],
+            'mime_type' => $responseData['data']['extension'] ?? $request->files['file']['type'],
             'time' => time(),
             'file_name' => $responseData['file_name'],
         ]);
 
         $response->header("Content-Type", "application/json");
-
+        $responseData['file_id'] = $fileId;
         $response->end(json_encode($responseData['data']));
 
     }else{

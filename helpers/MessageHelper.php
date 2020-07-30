@@ -163,6 +163,8 @@ class MessageHelper
                 return "видео";
             case self::LINK_MESSAGE_TYPE:
                 return "ссылка";
+            case self::MONEY_MESSAGE_TYPE:
+                return "деньги";
         }
     }
 
@@ -188,7 +190,6 @@ class MessageHelper
     {
         Manager::table('messages')
             ->where('redis_id', $data['message_id'])
-            ->orWhere('id', $data['message_id'])
             ->update([
                 'text' => $data['text'],
                 'edit' => 1,

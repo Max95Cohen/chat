@@ -56,15 +56,21 @@ $server->on('message', function ($server, $frame) {
     $response['cmd'] = $requestData['cmd'];
     $response['data'] = $responseData['data'];
 
-    foreach ($notifyUsers as $notifyUser) {
-        $connectionId = intval($redis->get("con:$notifyUser"));
-        $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
-        if ($checkConnection) {
-            $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
+    $logout = $response['data']['logout'] ?? null;
+
+    if ($logout) {
+        $response['logout'] = true;
+        $server->push($frame->fd,json_encode($response,JSON_UNESCAPED_UNICODE));
+    }else{
+        foreach ($notifyUsers as $notifyUser) {
+            $connectionId = intval($redis->get("con:$notifyUser"));
+            $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
+            if ($checkConnection) {
+                $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
+            }
+
         }
-
     }
-
 });
 
 
@@ -79,9 +85,7 @@ $server->on('close', function ($server, $fd) {
     $redis->zRemRangeByScore('users:connections', $fd, $fd);
     $redis->set("user:last:visit:{$userId}", time());
 
-
     $redis->close();
-
 });
 
 

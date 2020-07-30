@@ -50,6 +50,14 @@ class MessageController
         // добавляем дополнительные параметры в зависимости от типа через фабрику
 
         $messageClass = Factory::getItem($data['message_type']);
+
+        // @TODO максимально тупой временный if (выпуск приложение через пару часов) ненавижу фротов
+        $fileId = $data['file_id'] ?? null;
+
+        if ($fileId) {
+            $data['mime_type'] = Manager::table('user_uploads')->where('id',$fileId)->value('mime_type');
+        }
+
         $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
 
         $data['message_type'] = $this->redis->hGet($messageRedisKey, 'type');
@@ -201,7 +209,7 @@ class MessageController
                 $this->redis->hSet($messageId, 'user_id', $data['user_id']);
                 $this->redis->hSet($messageId, 'status', MessageController::NO_WRITE);
                 $this->redis->hSet($messageId, 'time', time());
-                $this->redis->hSet($messageId, 'type', MessageHelper::FORWARD_MESSAGE_TYPE);
+                $this->redis->hSet($messageId, 'type', $messageData['type']);
                 $this->redis->hSet($messageId, 'attachments', $attachments);
                 $this->redis->hSet($messageId, 'forward_message_id', $messageId);
 
@@ -218,7 +226,7 @@ class MessageController
                     'user_id' => $messageData['user_id'],
                     'status' => MessageController::NO_WRITE,
                     'time' => time(),
-                    'type' => MessageHelper::FORWARD_MESSAGE_TYPE,
+                    'type' => $messageData['type'],
                     'attachments' => $attachments,
                     'forward_message_id' => $messageId,
                     'forward_data' => json_encode($forwardData)
