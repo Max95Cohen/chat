@@ -137,6 +137,18 @@ class MessageController
 
     }
 
+
+    public function twoVersionWrite(array $data)
+    {
+        $messageId = $data['message_id'];
+        $chatId = $data['chat_id'];
+
+        $chatMembers = ChatHelper::getChatMembers($chatId,$this->redis);
+
+
+    }
+
+
     /**
      * @param array $data
      * @return array
