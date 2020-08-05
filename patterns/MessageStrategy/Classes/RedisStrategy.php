@@ -38,17 +38,7 @@ class RedisStrategy implements MessageStrategyInterface
             $messageWriteStatus = $this->redis->hGet($chatMessageId, 'status');
 
             if ($messageOwner != $data['user_id'] && $messageWriteStatus != MessageController::WRITE) {
-
-                $this->redis->watch("chat:unwrite:count:{$chatId}");
-                $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));
-                if ($unwriteCount > 0) {
-                    $unwriteCount-=1;
-                    $this->redis->multi();
-                    $this->redis->set("chat:unwrite:count:{$chatId}",$unwriteCount);
-
-                    $this->redis->hSet($chatMessageId,'status', MessageController::WRITE);
-                }
-                $this->redis->exec();
+                $this->redis->hSet($chatMessageId, 'status', MessageController::WRITE);
             }
 
             $message = $this->redis->hGetAll($chatMessageId);
@@ -66,9 +56,9 @@ class RedisStrategy implements MessageStrategyInterface
                 $messageClass = Factory::getItem($messageType);
                 $edit = $message['edit'] ?? 0;
                 if ($replyMessageId) {
-                    $replyMessageType = $this->redis->hGet($replyMessageId,'type') ?? Manager::table('messages')
-                            ->where('redis_id',$replyMessageId)
-                            ->orWhere('id',$replyMessageId)
+                    $replyMessageType = $this->redis->hGet($replyMessageId, 'type') ?? Manager::table('messages')
+                            ->where('redis_id', $replyMessageId)
+                            ->orWhere('id', $replyMessageId)
                             ->value('type');
                     $replyMessageClass = Factory::getItem($replyMessageType);
                 }
@@ -78,7 +68,7 @@ class RedisStrategy implements MessageStrategyInterface
 
                 if ($forwardMessageId) {
 
-                    $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id',$forwardMessageId)->first()->toArray();
+                    $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id', $forwardMessageId)->first()->toArray();
                     $avatar = $this->redis->get("user_avatar:{$forwardMessage['user_id']}");
                     $forwardData = [
                         'user_id' => $forwardMessage['user_id'],
@@ -97,7 +87,7 @@ class RedisStrategy implements MessageStrategyInterface
                     'id' => $chatMessageId,
                     'user_id' => $message['user_id'],
                     'avatar' => $this->redis->get("user:avatar:{$message['user_id']}"),
-                    'phone' =>  $this->redis->get("user:phone:{$message['user_id']}"),
+                    'phone' => $this->redis->get("user:phone:{$message['user_id']}"),
                     'avatar_url' => MessageHelper::AVATAR_URL,
                     'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
                     'text' => $message['text'] ?? null,
@@ -106,7 +96,7 @@ class RedisStrategy implements MessageStrategyInterface
                     'extension' => $extension == false ? null : $extension,
                     'time' => $messageTime,
                     'attachments' => $attachments,
-                    'attachment_url' => method_exists($messageClass,'getMediaUrl') ? $messageClass::getMediaUrl() : null,
+                    'attachment_url' => method_exists($messageClass, 'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                     'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
                     'forward_data' => $forwardData ? json_encode($forwardData) : null,
                     'write' => $message['status'],

@@ -47,10 +47,10 @@ class MemberController
                 'online' => $online,
                 'role' => strval(intval($role)),
                 'email' => $this->redis->get("user:email:{$memberId}") ?? '',
-                'phone' => $this->redis->get("user:phone:{$memberId}") ?? '',
+                'phone' => $this->redis->get("userId:phone:{$memberId}") ?? '',
             ];
-            usort($responseData, function ($a,$b){
-               return $a['role'] <=> $b['role'];
+            usort($responseData, function ($a, $b) {
+                return $a['role'] <=> $b['role'];
             });
 
         }
@@ -71,7 +71,7 @@ class MemberController
         $role = $data['role'];
         dump("work change");
         $membersForChange = explode(',', $data['members']);
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0,ChatController::OWNER, ['withscores' => true]);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER, ['withscores' => true]);
         $checkAdmin = array_search($userId, $chatMembers);
         $checkMembersForChange = array_intersect($membersForChange, $chatMembers);
         $changeUsers = [];
@@ -79,7 +79,7 @@ class MemberController
         if ($checkAdmin === ChatController::OWNER && in_array($role, ChatController::getRolesForOwner())) {
             foreach ($chatMembers as $memberForChange) {
                 $member = $chatMembers[$memberForChange] ?? null;
-                if ($member){
+                if ($member) {
                     $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberForChange);
                     $changeUsers[] = [
                         'user_id' => $memberForChange,
@@ -163,7 +163,7 @@ class MemberController
         $membersId = array_unique(explode(',', $data['members_id']));
         $userId = $data['user_id'];
 
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0,ChatController::OWNER, ['withscores' => true]);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER, ['withscores' => true]);
         $userRole = (int)$chatMembers[$userId] ?? 'not allowed';
         dump($chatMembers);
 
@@ -175,7 +175,7 @@ class MemberController
             foreach ($membersId as $memberId) {
                 if (!array_key_exists($memberId, $chatMembers)) {
                     $this->redis->zAdd("user:chats:{$memberId}", ['NX'], time(), $data['chat_id']);
-                    $this->redis->zRem("chat:members:{$chatId}",$memberId);
+                    $this->redis->zRem("chat:members:{$chatId}", $memberId);
                     $this->redis->zAdd("chat:members:{$chatId}", ['NX'], ChatController::SUBSCRIBER, $memberId);
 
                     // тут создается стандартное сообщение о том что пользователь добавлен в группу
@@ -246,23 +246,24 @@ class MemberController
 
 
     }
+
     //@TODO отрефакторить и вынести в хелпер создание сообщения и поиск подпискичка тоже
     public function chatLeave(array $data)
     {
-        $this->redis->zRem("chat:members:{$data['chat_id']}",$data['user_id']);
+        $this->redis->zRem("chat:members:{$data['chat_id']}", $data['user_id']);
         $bannedTime = time();
         Manager::table("chat_members")
-            ->where('user_id',$data['user_id'])
-            ->where('chat_id',$data['chat_id'])
+            ->where('user_id', $data['user_id'])
+            ->where('chat_id', $data['chat_id'])
             ->delete();
 
         Manager::table('chats')
-            ->where('id',$data['chat_id'])
-            ->decrement('members_count',1);
+            ->where('id', $data['chat_id'])
+            ->decrement('members_count', 1);
 
         // удаляю чат из списка чатов пользователя
 
-        $this->redis->zRem("user:chats:{$data['user_id']}",$data['chat_id']);
+        $this->redis->zRem("user:chats:{$data['user_id']}", $data['chat_id']);
 
 
         $deletedMemberName = $this->redis->get("user:name:{$data['user_id']}");
@@ -279,7 +280,7 @@ class MemberController
         // тут оно добавляется в список всех сообщений чата
         $this->redis->zAdd("chat:{$data['chat_id']}", ['NX'], time(), $delMessageRedisKey);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             'status' => 'true',
             'user_id' => $data['user_id'],
             'chat_id' => $data['chat_id'],
@@ -288,21 +289,24 @@ class MemberController
 
     }
 
-    public function searchInChat(array $data)
+    /**
+     * @param array $data
+     * @return array[]
+     */
+    public function searchInChat(array $data): array
     {
         $chatId = $data['chat_id'];
-        $chatMembersId = $this->redis->zRange("chat:members:{$chatId}",0,-1,true);
+        $chatMembersId = $this->redis->zRange("chat:members:{$chatId}", 0, -1, true);
         $search = $data['search'];
 
         $members = [];
-
 
         foreach ($chatMembersId as $memberId => $role) {
             $online = UserHelper::checkOnline($memberId, $this->redis);
             $members[] = [
                 'user_id' => $memberId,
                 'chat_id' => $chatId,
-                'avatar' => UserHelper::getUserAvatar($memberId,$this->redis),
+                'avatar' => UserHelper::getUserAvatar($memberId, $this->redis),
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'user_name' => $this->redis->get("user:name:$memberId"),
                 'online' => $online,
@@ -316,15 +320,31 @@ class MemberController
             $memberName = mb_strtolower($member['user_name']);
             $search = mb_strtolower($search);
             return
-                Str::startsWith($member['phone'],$search) ||
-                Str::startsWith($memberName,$search);
+                Str::startsWith($member['phone'], $search) ||
+                Str::startsWith($memberName, $search);
         })->values()->all();
-        dump($searchUsers);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$searchUsers);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $searchUsers);
 
     }
 
+    public function deleteChat(array $data)
+    {
+        $userId = $data['user_id'];
+        $chatId = $data['chat_id'];
+
+        $userStatus = $this->redis->zRangeByScore("chat:members:{$chatId}", $userId, $userId);
+
+        if ($userStatus == ChatController::BANNED || $userStatus == false) {
+            $this->redis->zRem("user:chats:{$userId}", $chatId);
+        } else {
+            $this->redis->zRem("user:chats:{$userId}", $chatId);
+            $this->redis->zRem("user:chat:members:{$chatId}",$userId);
+            // @TODO логика создания сообщения
+        }
+
+
+    }
 
 
 }

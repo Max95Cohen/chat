@@ -20,16 +20,22 @@ $capsule->addConnection([
 ]);
 
 $capsule->setAsGlobal();
-while (true){
-    $allUsers = DB::table('customers')->get(['id','name','avatar','phone']);
+while (true) {
+    $allUsers = DB::table('customers')->get(['id', 'name', 'avatar', 'phone']);
     $redis = new Redis();
 
-    $redis->pconnect('127.0.0.1',6379);
+    $redis->pconnect('127.0.0.1', 6379);
 
     foreach ($allUsers as $user) {
-        $redis->set("user:avatar:{$user->id}",$user->avatar);
-        $redis->set("user:name:{$user->id}",$user->name);
-        $redis->set("user:phone:{$user->phone}",$user->phone);
+        dump($user->id);
+        $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
+        $redis->set("user:avatar:{$user->id}", $user->avatar);
+        $redis->set("user:name:{$user->id}", $user->name);
+        $redis->set("userId:phone:{$user->id}", $user->phone);
+        $redis->set("user:phone:{$phoneInCorrectFormat}", $user->id);
+
+        $redis->del("user:phone:{$user->id}");
+
 
     }
 

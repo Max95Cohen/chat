@@ -26,6 +26,7 @@ class UserController
         $phone = PhoneHelper::replaceForSeven($phone);
 
         $checkExist = $this->redis->get("user:phone:{$phone}");
+        dump($checkExist);
         if ($checkExist) {
             $userId = (int)$checkExist;
             $avatar = $this->redis->get("user:avatar:{$userId}");

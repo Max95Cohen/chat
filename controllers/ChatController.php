@@ -33,6 +33,10 @@ class ChatController
 
     const CHAT_MEDIA_URL = '';
 
+    const CHAT_MUTE = 1;
+    const CHAT_UNMUTE = 0;
+
+
     //@TODO вынести эти 2 функции в отдельный хелпер
     public static function getRolesForOwner()
     {
@@ -91,9 +95,9 @@ class ChatController
         // нужно для сортировки,
         $responseData = [];
 
-        foreach ($userChatIds as $userChatId) {
-            $chat = $userChats->where('id', $userChatId)->first();
-            $lastMessageId = $this->redis->zRange("chat:$userChatId", -1, -1);
+        foreach ($userChatIds as $chatId) {
+            $chat = $userChats->where('id', $chatId)->first();
+            $lastMessageId = $this->redis->zRange("chat:$chatId", -1, -1);
             //@TODO тестовая фигня нужно проверить и исправить
             $lastMessageId = $lastMessageId[0] ?? null;
             $lastMessage = $lastMessageId ? $this->redis->hGetAll($lastMessageId) : [];
@@ -101,7 +105,7 @@ class ChatController
 
 
             if ($chat) {
-                $chatStartTime = $this->redis->zRange("chat:{$userChatId}", 0, 0, true);
+                $chatStartTime = $this->redis->zRange("chat:{$chatId}", 0, 0, true);
                 $chatStartTime = $chatStartTime == false ? "" : (int)array_shift($chatStartTime);
 
 
@@ -114,7 +118,7 @@ class ChatController
                 $lastMessageTime = $lastMessage['time'] ?? '';
 
                 //@TODO пока нужно потом отрефакторить
-                $chatUsers = $this->redis->zRangeByScore("chat:members:$userChatId", 0, self::OWNER);
+                $chatUsers = $this->redis->zRangeByScore("chat:members:$chatId", 0, self::OWNER);
 
                 $anotherUsers = array_diff($chatUsers, [$data['user_id']]);
                 $anotherUserId = array_shift($anotherUsers);
@@ -133,7 +137,7 @@ class ChatController
                 ];
 
                 if (!$checkNotBanned) {
-                    $bannedTime = $this->redis->get("user:delete:in:chat:{$data['user_id']}:{$userChatId}");
+                    $bannedTime = $this->redis->get("user:delete:in:chat:{$data['user_id']}:{$chatId}");
                     $lastMessageData = [
                         'text' => 'Вас исключили из группы',
                         'type' => MessageHelper::SYSTEM_MESSAGE_TYPE,
@@ -143,23 +147,25 @@ class ChatController
                 }
 
                 $responseData[] = [
-                    'id' => $userChatId,
+                    'id' => $chatId,
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
                     'name' => ChatHelper::getChatName($chat->type, $chat->id, $data['user_id'], $this->redis),
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
-                    'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("chat:unwrite:count:{$userChatId}")) : 0,
+                    'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0,
                     'avatar_url' => MessageHelper::AVATAR_URL,
                     'another_user_id' => $anotherUserId,
                     'another_user_phone' => $this->redis->get("user:phone:{$anotherUserId}"),
                     'last_message' => $lastMessageData,
-                    'members' => $chatMembersData ?? null
+                    'members' => $chatMembersData ?? null,
+                    'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis)
                 ];
 
 
             }
 
         }
+        $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
 
     }
@@ -182,6 +188,9 @@ class ChatController
         }
 
         $responseData = $strategy->executeStrategy("getMessages", $data);
+
+        ChatHelper::nullifyUnWriteCount($chatId,$data['user_id'],$this->redis);
+
         $this->redis->close();
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
     }
@@ -247,6 +256,41 @@ class ChatController
         ]);
 
     }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function muteChat(array $data) :array
+    {
+        $userId = $data['user_id'];
+        $chatId = $data['chat_id'];
+        $mute = $data['mute'] ?? self::CHAT_MUTE;
+
+        if ($mute == self::CHAT_MUTE) {
+            $this->redis->zAdd("u:mute:ch:{$userId}",['NX'],$chatId,$chatId);
+
+            $this->redis->close();
+
+            return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+                'chat_id' => $chatId,
+                'mute' => self::CHAT_MUTE,
+            ]);
+
+        }
+
+        $this->redis->zRem("u:mute:ch:{$userId}",$chatId);
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+            'chat_id' => $chatId,
+            'mute' => self::CHAT_UNMUTE,
+        ]);
+
+
+
+    }
+
+
 
 
 }

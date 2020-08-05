@@ -6,18 +6,13 @@ use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Middlewars\Interfaces\BaseMiddlewareInterface;
 use Redis;
+use Traits\RedisTrait;
 
 class CheckUserInChatMembersMiddleware implements BaseMiddlewareInterface
 {
     private bool $next = false;
-    private Redis $redis;
 
-    public function __construct()
-    {
-        $this->redis = new Redis();
-        $this->redis->connect('127.0.0.1',6379);
-    }
-
+    use RedisTrait;
 
     public function handle(array $data)
     {
@@ -25,6 +20,7 @@ class CheckUserInChatMembersMiddleware implements BaseMiddlewareInterface
             $this->redis->close();
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ["success" => false, "message" => 'пользователя нет в участниках чата']);
         }
+        $this->redis->close();
         $this->setNext(true);
 
     }

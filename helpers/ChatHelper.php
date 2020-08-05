@@ -18,7 +18,7 @@ class ChatHelper
      */
     public static function getChatMembers(int $chatId, Redis $redis): array
     {
-        return $redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, '+inf');
+        return $redis->zRangeByScore("chat:members:{$chatId}", ChatController::SUBSCRIBER, '+inf');
     }
 
     /**
@@ -84,6 +84,40 @@ class ChatHelper
 
         return $chatAvatarInRedis ?? $chatAvatarInMysql;
 
+    }
+
+    /**
+     * @param int $chatId
+     * @param Redis $redis
+     * @param array $chatMembers
+     */
+    public static function incrUnWriteCountForMembers(int $chatId, Redis $redis, array $chatMembers): void
+    {
+        foreach ($chatMembers as $chatMember) {
+            $redis->incr("usr:unw:{$chatMember}:{$chatId}", 1);
+        }
+    }
+
+    /**
+     * @param int $chatId
+     * @param int $userId
+     * @param Redis $redis
+     */
+    public static function nullifyUnWriteCount(int $chatId, int $userId, Redis $redis) :void
+    {
+        $redis->set("usr:unw:{$userId}:{$chatId}",0);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $chatId
+     * @param Redis $redis
+     * @return array
+     */
+    public static function checkChatMute(int $userId, int $chatId, Redis $redis) :int
+    {
+        $mute =  $redis->zRangeByScore("u:mute:ch:{$userId}",$chatId,$chatId);
+        return $mute == [] ? ChatController::CHAT_UNMUTE : ChatController::CHAT_MUTE;
     }
 
 

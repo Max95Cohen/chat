@@ -1,5 +1,7 @@
 <?php
 
+use Controllers\ChatController;
+use Helpers\ChatHelper;
 use Helpers\ConfigHelper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
@@ -57,7 +59,10 @@ while (true) {
                     foreach ($chatMembers as $k => $chatMember) {
                         $messUserId = $message['user_id'];
                         dump($messUserId,$chatMember);
-                        if ($messUserId == $chatMember) {
+
+                        $checkChatMute = ChatHelper::checkChatMute($chatMember,$chat->id,$redis);
+
+                        if ($messUserId == $chatMember || $checkChatMute == ChatController::CHAT_MUTE) {
                             continue;
                         }
                         $memberFcmToken = $redis->hGet("Customer:{$chatMember}", 'fcm');

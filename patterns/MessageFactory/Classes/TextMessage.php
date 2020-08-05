@@ -134,18 +134,27 @@ class TextMessage implements MessageInterface
     public function getOriginalDataForReply($messageId, Redis $redis)
     {
         $messageDataInRedis = $redis->hGetAll($messageId);
+        $messageDataInMysql = null;
 
         $messageData = $messageDataInRedis == false
-            ? Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'text'])->toArray()
+            ? $messageDataInMysql = Manager::table('messages')->where('id', $messageId)->first(['id', 'user_id', 'text']) ?? null
             : $messageDataInRedis;
-        return [
-            'message_id' => $messageId,
-            'text' => $messageData['text'],
-            'type' => MessageHelper::TEXT_MESSAGE_TYPE,
-            'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
-            'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
-            'user_id' => $messageData['user_id'],
-        ];
+
+        if ($messageDataInMysql) {
+            $messageData =$messageDataInMysql->toArray();
+        }
+
+        if ($messageData) {
+            return [
+                'message_id' => $messageId,
+                'text' => $messageData['text'],
+                'type' => MessageHelper::TEXT_MESSAGE_TYPE,
+                'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
+                'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
+                'user_id' => $messageData['user_id'],
+            ];
+        }
+
     }
 
 

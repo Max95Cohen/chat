@@ -9,6 +9,13 @@
           </advancedOptions>
         </fileTransfer>
       </webServer>
+      <webServer id="c295a7bf-ef69-4f53-9081-50ce1531f20c" name="production chat">
+        <fileTransfer rootFolder="/var/www/chat" accessType="SFTP" host="indigo24.com" port="33022" sshConfigId="c0e65e5b-2e58-4f3d-8918-08d3ddcc4a80" sshConfig="gennady@indigo24.com:33022 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

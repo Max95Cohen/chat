@@ -58,19 +58,51 @@ $server->on('message', function ($server, $frame) {
 
     $logout = $response['data']['logout'] ?? null;
 
-    if ($logout) {
-        $response['logout'] = true;
-        $server->push($frame->fd,json_encode($response,JSON_UNESCAPED_UNICODE));
-    }else{
-        foreach ($notifyUsers as $notifyUser) {
-            $connectionId = intval($redis->get("con:$notifyUser"));
-            $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
-            if ($checkConnection) {
-                $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
+    $multiresponse = $response['multi_response'] ?? null;
+
+    dump($multiresponse);
+    if ($multiresponse) {
+        $responses = $multiresponse['responses'];
+        foreach ($responses as $oneResponse) {
+            $oneResponseNotifyUsers = $oneResponse['notify_users'];
+
+            foreach ($oneResponseNotifyUsers as $oneResponseNotifyUser) {
+                $connectionId = intval($redis->get("con:$oneResponseNotifyUser"));
+                $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
+
+                $responseForOneUser = [
+                    'cmd' =>$oneResponse['cmd'],
+                    'data' => $oneResponse['data']
+                ];
+
+                if ($checkConnection) {
+                    $server->push($connectionId, json_encode($responseForOneUser, JSON_UNESCAPED_UNICODE));
+                }
+
             }
 
         }
+
+    } else {
+
+        if ($logout) {
+            $response['logout'] = true;
+            $server->push($frame->fd, json_encode($response, JSON_UNESCAPED_UNICODE));
+        } else {
+            foreach ($notifyUsers as $notifyUser) {
+                $connectionId = intval($redis->get("con:$notifyUser"));
+                $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
+                if ($checkConnection) {
+                    $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
+                }
+
+            }
+        }
+
     }
+
+
+
 });
 
 

@@ -64,6 +64,13 @@ class RouterController
             'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
 
+        'chat:mute' => [
+            'action' => 'ChatController@muteChat',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
+        ],
+
+
         //messageController
         'message:create' => [
             'action' => 'MessageController@create',
@@ -96,7 +103,7 @@ class RouterController
         'message:forward' => [
             'action' => 'MessageController@forward',
             'params' => true,
-            'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class]
+            'middleware' => [CheckUserTokenMiddleware::class]
         ],
 
 

@@ -6,6 +6,7 @@ use Helpers\ChatHelper;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
+use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
 use Redis;
@@ -55,7 +56,7 @@ class MessageController
         $fileId = $data['file_id'] ?? null;
 
         if ($fileId) {
-            $data['mime_type'] = Manager::table('user_uploads')->where('id',$fileId)->value('mime_type');
+            $data['mime_type'] = Manager::table('user_uploads')->where('id', $fileId)->value('mime_type');
         }
 
         $messageClass->addExtraFields($this->redis, $messageRedisKey, $data);
@@ -78,8 +79,11 @@ class MessageController
         $this->redis->zAdd("user:chats:{$userId}", ['NX'], $data['message_time'], $chatId);
 
 
-        $notifyUsers = $this->redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 3);
-
+        $notifyUsers = $this->redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 100);
+        dump($notifyUsers);
+        $chatMembersWithNotAuthor = $notifyUsers;
+        unset($chatMembersWithNotAuthor[$userId]);
+        dump($notifyUsers);
         foreach ($notifyUsers as $notifyUser) {
             $this->redis->zAdd("user:chats:{$notifyUser}", ['XX'], $data['message_time'], $chatId);
         }
@@ -103,6 +107,11 @@ class MessageController
 //        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
 
         $responseData = $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis);
+
+        // увеличиваем у всех кроме автора сообщения количество непрочитанных на 1
+
+        ChatHelper::incrUnWriteCountForMembers($chatId, $this->redis, $chatMembersWithNotAuthor);
+
         $this->redis->close();
 
         return [
@@ -122,32 +131,25 @@ class MessageController
         $chatId = $data['chat_id'];
         $notifyUsers = $this->redis->zRange("chat:members:{$chatId}", 0, -1);
 
-        $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
         $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
 
-        $this->redis->incrBy("chat:unwrite:count:{$chatId}", -1);
-        $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
+        if ($messageOwner != $data['user_id']) {
+            $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
+            $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'owner_id' => $messageOwner,
-            'write' => strval(MessageController::WRITE),
-        ]);
+            ChatHelper::nullifyUnWriteCount($chatId, $data['user_id'], $this->redis);
 
-    }
+            $this->redis->close();
 
-
-    public function twoVersionWrite(array $data)
-    {
-        $messageId = $data['message_id'];
-        $chatId = $data['chat_id'];
-
-        $chatMembers = ChatHelper::getChatMembers($chatId,$this->redis);
-
+            return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+                'owner_id' => $messageOwner,
+                'write' => strval(MessageController::WRITE),
+            ]);
+        }
 
     }
-
 
     /**
      * @param array $data
@@ -200,63 +202,83 @@ class MessageController
     }
 
 
-    public function forward(array $data)
+    public function forward(array $data) :array
     {
-        $forwardChatId = $data['chat_id'];
         $userId = $data['user_id'];
 
         $messageIds = explode(',', $data['forward_messages_id']);
+        $forwardChatIds = explode(',', $data['chat_id']);
+
+
         // @TODO отрефакторить это собирать все id сообщений и делать 1 sql запрос пока пусть так для теста
         $responseData = [];
-        foreach ($messageIds as $messageId) {
-            $redisForwardMessageData = $this->redis->hGetAll($messageId);
-            $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('id', $messageId)->first()->toArray() : $redisForwardMessageData;
-            $attachments = $messageData['attachments'] ?? null;
-            if ($messageData) {
-                // создать сообщение и добавить в чат
 
-                $messageId = $this->redis->incrBy("user:message:{$userId}", 1);
-                $this->redis->hSet($messageId, 'text', $messageData['text']);
-                $this->redis->hSet($messageId, 'chat_id', $forwardChatId);
-                $this->redis->hSet($messageId, 'user_id', $data['user_id']);
-                $this->redis->hSet($messageId, 'status', MessageController::NO_WRITE);
-                $this->redis->hSet($messageId, 'time', time());
-                $this->redis->hSet($messageId, 'type', $messageData['type']);
-                $this->redis->hSet($messageId, 'attachments', $attachments);
-                $this->redis->hSet($messageId, 'forward_message_id', $messageId);
+        $multiResponseData = [];
 
-                $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
-                $forwardData = [
-                    'user_id' => $messageData['user_id'],
-                    'avatar' => $avatar == false ? "noAvatar.png" : $avatar,
-                    'chat_id' => $messageData['chat_id'],
-                    'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}")
-                ];
+        $i = 0;
+        foreach ($forwardChatIds as $chatId) {
+            foreach ($messageIds as $messageId) {
+                $redisForwardMessageData = $this->redis->hGetAll($messageId);
+                $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('id', $messageId)->first()->toArray() : $redisForwardMessageData;
+                $attachments = $messageData['attachments'] ?? null;
 
-                $responseData[] =[
-                    'text' => $messageData['text'],
-                    'user_id' => $messageData['user_id'],
-                    'status' => MessageController::NO_WRITE,
-                    'time' => time(),
-                    'type' => $messageData['type'],
-                    'attachments' => $attachments,
-                    'forward_message_id' => $messageId,
-                    'forward_data' => json_encode($forwardData)
-                ];
+                $checkUserInChatMembers = UserHelper::CheckUserInChatMembers( (int) $data['user_id'],$chatId,$this->redis);
+                dump($messageData);
+                if ($messageData && $checkUserInChatMembers) {
+                    // создать сообщение и добавить в чат
 
-                // добавляем сообщение в общий список сообщений
+                    $messageId = $this->redis->incrBy("user:message:{$userId}", 1);
+                    $this->redis->hSet($messageId, 'text', $messageData['text']);
+                    $this->redis->hSet($messageId, 'chat_id', $chatId);
+                    $this->redis->hSet($messageId, 'user_id', $data['user_id']);
+                    $this->redis->hSet($messageId, 'status', MessageController::NO_WRITE);
+                    $this->redis->hSet($messageId, 'time', time());
+                    $this->redis->hSet($messageId, 'type', $messageData['type']);
+                    $this->redis->hSet($messageId, 'attachments', $attachments);
+                    $this->redis->hSet($messageId, 'forward_message_id', $messageId);
 
-                $this->redis->zAdd('all:messages', ['NX'], self::NO_WRITE, "message:$userId:$messageId");
+                    $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
+                    $forwardData = [
+                        'user_id' => $messageData['user_id'],
+                        'avatar' => $avatar == false ? "noAvatar.png" : $avatar,
+                        'chat_id' => $messageData['chat_id'],
+                        'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}")
+                    ];
+                    $multiResponseData['responses'][$i]['cmd'] = 'message:create';
+                    $multiResponseData['responses'][$i]['notify_users'] = ChatHelper::getChatMembers($chatId,$this->redis);
+                    $multiResponseData['responses'][$i]['data'] = [
+                        "status" => true,
+                        "write" => MessageController::NO_WRITE,
+                        "chat_id" => $chatId,
+                        "message_id" => $messageId,
+                        "user_id" => $data['user_id'],
+                        "time" => time(),
+                        "avatar" => $avatar == false ? "noAvatar.png" : $avatar,
+                        "avatar_url" => MessageHelper::AVATAR_URL,
+                        "user_name" => $this->redis->get("user:name:{$data['user_id']}"),
+                        'attachments' => $attachments,
+                        'forward_message_id' => $messageId,
+                        'forward_data' => json_encode($forwardData),
+                        'type' => $messageData['type'],
+                    ];
+                    dump($multiResponseData);
+                    ++$i;
+                    // добавляем сообщение в общий список сообщений
 
-                MessageHelper::addMessageInChat($this->redis, $forwardChatId, $messageId);
+                    $this->redis->zAdd('all:messages', ['NX'], self::NO_WRITE, "message:$userId:$messageId");
+
+                    MessageHelper::addMessageInChat($this->redis, $chatId, $messageId);
+
+                }
 
             }
-
         }
-        dump($responseData);
-        $notifyUsers = ChatHelper::getChatMembers($forwardChatId,$this->redis);
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,$responseData);
 
+
+
+        $multiResponseData['multi_response'] = true;
+
+        return $multiResponseData;
     }
 
 

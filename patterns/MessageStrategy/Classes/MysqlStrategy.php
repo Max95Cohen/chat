@@ -46,7 +46,6 @@ class MysqlStrategy
 
         $messagesForDivider = [];
         $attachments = $message['attachments'] ?? null;
-        $responseDataWithDivider = [];
         foreach ($allMessages as $message) {
             // возвращаю сообщения в корректном формате
             $messageType = $message->type ?? 0;
@@ -93,17 +92,6 @@ class MysqlStrategy
                 'write' => (string)$message->status,
                 'edit' => $edit,
             ];
-            if ($message->status == MessageController::NO_WRITE && $message->user_id != $data['user_id']) {
-                $this->redis->watch("chat:unwrite:count:{$chatId}");
-                $unwriteCount = intval($this->redis->get("chat:unwrite:count:{$chatId}"));
-                dump($unwriteCount);
-                if ($unwriteCount > 0) {
-                    $unwriteCount -= 1;
-                    $this->redis->multi();
-                    $this->redis->set("chat:unwrite:count:{$chatId}", $unwriteCount);
-                    $this->redis->exec();
-                }
-            }
 
         }
 

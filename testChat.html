@@ -15,13 +15,13 @@ nfv
 
     // let socket = new WebSocket('ws://127.0.0.1:9502/');
     let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
-    let myUserId =113631;
+    let myUserId = 113631;
     let YerbolatUserId = 113629;
 
     let chatList = false;
-    var user_id = myUserId;
-    var chat_id =234;
-    var userToken ='7fbe87b9c5225b45c8ed9661d3cc25204bafc5cc';
+    var user_id = 113631;
+    var chat_id = 364;
+    var userToken = 'b5e63c500e410be63f061b965c5eead156bcfb6d';
     var message_id = "message:113631:4816";
 
     //908102
@@ -53,7 +53,7 @@ nfv
         //     data: {
         //         user_id: user_id,
         //         userToken: userToken,
-        //         phone:'77752222422',
+        //         phone:'77002611596',
         //     }
         //
         // }));
@@ -73,22 +73,25 @@ nfv
         //
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
+        var messIds = [];
 
-        // let iCount = 1;
-        // for (let i = 0; i<iCount;i++){
+
+        // let iCount = 10;
+        // for (let i = 0; i < iCount; i++) {
         //     socket.send(JSON.stringify({
         //         cmd: 'message:create',
         //         data: {
-        //             user_id:user_id,
+        //             user_id: user_id,
         //             userToken: userToken,
-        //             chat_id:chat_id,
-        //             message_type:2,
-        //             attachments:'[{"filename": "PHnUELkvwtZfWYkGeSmfNIRmQiVeNo6.mp4" }',
-        //             file_id:321,
+        //             chat_id: chat_id,
+        //             message_type: 0,
+        //             text: 'sad ' ,
+        //             // attachments:'[{"filename": "PHnUELkvwtZfWYkGeSmfNIRmQiVeNo6.mp4" }',
+        //             // file_id: 321,
         //         }
         //
         //     }));
-        //
+        //     //
         // }
         //
         // let RequestChatCount = Math.ceil(iCount / 20);
@@ -180,12 +183,13 @@ nfv
 
         // сделать сообщение прочитанным
 
+
         // socket.send(JSON.stringify({
         //     cmd: 'message:write',
         //     data: {
-        //         user_id: 30220,
-        //         chat_id:104,
-        //         message_id:'message:30220:97',
+        //         user_id: 113631,
+        //         chat_id: chat_id,
+        //         message_id: 'message:30220:97',
         //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
         //     }
         //
@@ -239,7 +243,7 @@ nfv
         //
         // }));
         //
-         // добавляет пользователя в чат
+        // добавляет пользователя в чат
         //
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:add',
@@ -278,17 +282,17 @@ nfv
         //
         //     }));
 
-        // socket.send(JSON.stringify({
-        //         cmd: 'message:forward',
-        //         data: {
-        //             user_id: user_id,
-        //             chat_id:161,
-        //             forward_messages_id:"message:113631:4802",
-        //             message_id:message_id,
-        //             userToken:userToken,
-        //         }
-        //
-        //     }));
+        socket.send(JSON.stringify({
+                cmd: 'message:forward',
+                data: {
+                    user_id: user_id,
+                    chat_id:'364,365',
+                    forward_messages_id:"message:113631:5195",
+                    message_id:message_id,
+                    userToken:userToken,
+                }
+
+            }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:change:name',
@@ -301,27 +305,36 @@ nfv
         //
         // }));
 
-        socket.send(JSON.stringify({
-            cmd: 'chat:member:search',
-            data: {
-                user_id: user_id,
-                chat_id:161,
-                search:"77759112603",
-                userToken:userToken,
-            }
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:member:search',e
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id:161,
+        //         search:"77759112603",
+        //         userToken:userToken,
+        //     }
+        //
+        // }));
 
-        }));
 
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:mute',
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id: chat_id,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
 
     });
 
-    socket.addEventListener('message',function (event) {
+    socket.addEventListener('message', function (event) {
         console.log(123123);
         console.log(event.data);
+
+
     })
-
-
-
 
 
 </script>
