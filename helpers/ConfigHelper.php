@@ -10,7 +10,7 @@ class ConfigHelper
 
 
     /**
-     * @param string $
+     * @param string
      * @return mixed
      */
     public static function getDbConfig(string $dbConfName)

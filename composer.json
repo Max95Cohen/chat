@@ -24,7 +24,7 @@
         }
     },
     "require-dev": {
-        "symfony/var-dumper": "^5.0",
+        "symfony/var-dumper": "^5.1",
         "phpunit/phpunit": "^9.0",
         "swoole/ide-helper": "@dev"
     }

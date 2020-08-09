@@ -126,12 +126,15 @@ class ChatController
                 // @TODO пока тут просто тупой if потом отрефакторю
                 $checkNotBanned = in_array($data['user_id'], $chatUsers);
 
+                $lastMessageTime = $lastMessageTime == "" ? $chatStartTime : $lastMessageTime;
+
+
                 $lastMessageData = [
                     'message_id' => $lastMessageId ?? '',
                     'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
                     'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
                     'text' => $lastMessageText ?? '',
-                    'time' => $lastMessageTime == "" ? $chatStartTime : $lastMessageTime,
+                    'time' => $lastMessageTime,
                     'type' => $type,
                     'message_for_type' => $messageForType,
                 ];
@@ -157,6 +160,7 @@ class ChatController
                     'another_user_id' => $anotherUserId,
                     'another_user_phone' => $this->redis->get("user:phone:{$anotherUserId}"),
                     'last_message' => $lastMessageData,
+                    'time' => $bannedTime ?? $lastMessageTime,
                     'members' => $chatMembersData ?? null,
                     'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis)
                 ];

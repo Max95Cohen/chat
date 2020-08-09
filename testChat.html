@@ -21,7 +21,7 @@ nfv
     let chatList = false;
     var user_id = 113631;
     var chat_id = 364;
-    var userToken = 'b5e63c500e410be63f061b965c5eead156bcfb6d';
+    var userToken = 'f040d0094870e454d0b60dc92e5a3d25e556a2d5';
     var message_id = "message:113631:4816";
 
     //908102
@@ -134,15 +134,15 @@ nfv
         // }));
 
         // // получение всех чатов с пагинацией
-        // socket.send(JSON.stringify({
-        //     cmd: 'chats:get',
-        //     data: {
-        //         user_id: user_id,
-        //         page:1,
-        //         userToken: userToken,
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chats:get',
+            data: {
+                user_id: user_id,
+                page:1,
+                userToken: userToken,
+            }
+
+        }));
 
         // // получение одного чата
         // socket.send(JSON.stringify({
@@ -282,17 +282,17 @@ nfv
         //
         //     }));
 
-        socket.send(JSON.stringify({
-                cmd: 'message:forward',
-                data: {
-                    user_id: user_id,
-                    chat_id:'364,365',
-                    forward_messages_id:"message:113631:5195",
-                    message_id:message_id,
-                    userToken:userToken,
-                }
-
-            }));
+        // socket.send(JSON.stringify({
+        //         cmd: 'message:forward',
+        //         data: {
+        //             user_id: user_id,
+        //             chat_id:'364,365',
+        //             forward_messages_id:"message:113631:5195",
+        //             message_id:message_id,
+        //             userToken:userToken,
+        //         }
+        //
+        //     }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:change:name',

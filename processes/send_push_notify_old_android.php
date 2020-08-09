@@ -1,7 +1,6 @@
 <?php
 
 use Controllers\ChatController;
-use Helpers\ConfigHelper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -18,20 +17,16 @@ $factory = (new \Kreait\Firebase\Factory())->withServiceAccount(__DIR__ . '/indi
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 $messaging = $factory->createMessaging();
-
-$config = ConfigHelper::getDbConfig('chat_db');
-
 $capsule->addConnection([
-    'driver' => $config['driver'],
-    'host' => $config['host'],
-    'database' => $config['database'],
-    'username' => $config['username'],
-    'password' => $config['password'],
-    'charset' => $config['charset'],
-    'collation' => $config['collation'],
-    'prefix' => $config['prefix'],
+    'driver' => 'mysql',
+    'host' => 'localhost',
+    'database' => 'chat',
+    'username' => 'aibekq',
+    'password' => 'l1e2#@fT0!C_T',
+    'charset' => 'utf8',
+    'collation' => 'utf8_unicode_ci',
+    'prefix' => '',
 ]);
-
 
 $capsule->setAsGlobal();
 
@@ -117,4 +112,5 @@ while (true) {
 
 
 }
+
 

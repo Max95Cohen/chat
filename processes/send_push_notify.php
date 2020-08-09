@@ -10,13 +10,7 @@ use Kreait\Firebase\Messaging\Notification;
 require __DIR__ . '/../vendor/autoload.php';
 
 
-$redis = new Redis();
-$redis->pconnect('127.0.0.1', 6379);
-
-
-$factory = (new \Kreait\Firebase\Factory())->withServiceAccount(__DIR__ . '/indigo24-fdf1b-firebase-adminsdk-upaae-5fb0aaf3a5.json');
-
-$capsule = new Illuminate\Database\Capsule\Manager();
+$capsule = new Manager();
 
 $config = ConfigHelper::getDbConfig('chat_db');
 
@@ -32,86 +26,116 @@ $capsule->addConnection([
 ]);
 
 $capsule->setAsGlobal();
-
-//echo 'Successful sends: '.$sendReport->successes()->count().PHP_EOL;
-//echo 'Failed sends: '.$sendReport->failures()->count().PHP_EOL;
+$fireBaseApiKey = 'AAAAvEEv5W0:APA91bG0qVzveg4pOsnyf6jm3Jj5NuA3_Q37hBF_rqYX59zAtUQpF1qMUSgKIdgs9JRBwkdZ58vBhCF_DEhNSE_OOn1-oox0Zos6cxsi5wxR22CqPvrqxHbTMg0nLo6AlZZoHhCc7J4w';
+$fireBaseUrl = 'https://fcm.googleapis.com/fcm/send';
 
 
 while (true) {
-
+    $redis = new Redis();
+    $redis->pconnect('127.0.0.1',6379);
     $allNotify = $redis->zRange("all:notify:queue", 0, -1);
     foreach ($allNotify as $notify) {
-        try {
-            $notifyData = $redis->hGetAll($notify);
+        $notifyData = $redis->hGetAll($notify);
+        $notifies = [];
+        if ($notifyData) {
+            $message = $redis->hGetAll($notifyData['link']);
 
-            $data = $redis->hGetAll($notify);
+            if ($message) {
+                $chat = Manager::table('chats')->find($message['chat_id']);
+                $chatMembers = $redis->zRangeByScore("chat:members:{$message['chat_id']}", 0, "+inf");
 
-            if ($data) {
-                $message = $redis->hGetAll($data['link']);
-                if ($message) {
-                    $attachments = $message['attachments'] ?? null;
-                    $messageText = $attachments ? MessageHelper::getAttachmentTypeString($message['type']) : $message['text'];
+                $attachments = $message['attachments'] ?? null;
+                $messageText = $attachments ? MessageHelper::getAttachmentTypeString($message['type']) : $message['text'];
 
-                    //@TODO хранить имена чатов в redis сегодня для теста пусть берет из mysql
 
-                    $chat = Manager::table('chats')->find($message['chat_id']);
-                    $chatMembers = $redis->zRangeByScore("chat:members:{$message['chat_id']}", 0, "+inf");
-                    if ($chat && is_array($chatMembers)) {
-                        $chatMembers = array_diff($chatMembers, [$message['user_id']]);
+                if ($chat && is_array($chatMembers)) {
 
-                        $chatName = $chat->name ?? $redis->get("user:name:{$message['user_id']}");
+                    $chatName = $chat->name ?? $redis->get("user:name:{$message['user_id']}");
+                    $userName = $redis->get("user:name:{$message['user_id']}");
+                    $mh = curl_multi_init();
 
-                        $chatName = $chatName == false ? '' : $chatName;
+                    foreach ($chatMembers as $k => $chatMember) {
+                        $messUserId = $message['user_id'];
+                        $checkOnline = $redis->exists("Customer:{$chatMember}");
 
-                        $userName = $redis->get("user:name:{$message['user_id']}");
-                        $badge = $redis->get("chat:unwrite:count:{$message['chat_id']}");
 
-                        $data = [
+                        if ($messUserId == $chatMember || !$checkOnline) {
+                            continue;
+                        }
+                        $memberFcmToken = $redis->hGet("Customer:{$chatMember}", 'fcm');
+                        $ch = curl_init();
+
+
+                        $postData = json_encode([
+                            'collapse_key' => 'type_a',
                             'data' => [
                                 'user_name' => $userName,
                                 'chat_id' => $message['chat_id'],
                                 'type' => $message['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE,
                                 'avatar' => $redis->get("user:avatar"),
                                 'user_id' => $message['user_id'],
+                                'chat_type' => $chat->type,
+                                'chat_name' => $chatName,
                             ],
+                            'priority' => 'high',
+                            'to' => $memberFcmToken,
                             'notification' => [
-                                'title' => $chatName,
                                 'body' => $messageText,
+                                'title' => $chatName,
                                 'sound' => 'default',
                             ],
-                        ];
+                        ]);
+
+                        curl_setopt($ch, CURLOPT_URL, $fireBaseUrl);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                            'Content-Type: application/json',
+                            'Authorization: key=' . $fireBaseApiKey,
+                        ]);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 
-                        $messageForPush = CloudMessage::fromArray($data);
+                        $notifies[$k] = $ch;
 
-                        // вычисляю device токены пользователей
-                        $deviceTokens = [];
-                        foreach ($chatMembers as $memberId) {
-
-                            $fcm = $redis->hGet("Customer:$memberId", 'fcm');
-                            if ($fcm) {
-                                $deviceTokens[] = $fcm;
-                            }
-                        }
-                        $sendReport = $messaging->sendMulticast($messageForPush, $deviceTokens);
-                        dump($sendReport->failures());
-                        dump($sendReport->successes()->count() . "успешно отправлено");
-                        dump($sendReport->failures()->count() . "неудачно отправлено");
-
+                        curl_multi_add_handle($mh, $notifies[$k]);
                     }
-                    // удаляю запись из очереди и hash таблицу из redis
+
+                    $active = null;
+
+                    do {
+                        curl_multi_exec($mh, $active);
+                    } while ($active);
+
+
+                    foreach (array_keys($notifies) as $key) {
+                        $error = curl_error($notifies[$key]);
+                        $requestUri = curl_getinfo($notifies[$key], CURLINFO_EFFECTIVE_URL);
+                        $time = curl_getinfo($notifies[$key], CURLINFO_TOTAL_TIME);
+                        $response = curl_multi_getcontent($notifies[$key]);  // get results
+                        if (!empty($error)) {
+                            echo "The request $key return a error: $error" . "\n";
+                        } else {
+                            echo "The request to '$requestUri' returned '$response' in $time seconds." . "\n";
+                        }
+
+                        curl_multi_remove_handle($mh, $notifies[$key]);
+                    }
+
+                    curl_multi_close($mh);
+
 
                 }
+
             }
 
 
-        } catch (Exception $e) {
-            dump($e->getMessage());
         }
+
         $redis->del($notify);
         $redis->zRem('all:notify:queue', $notify);
     }
 
-
 }
-
