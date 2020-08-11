@@ -136,7 +136,7 @@ class MessageController
         if ($messageOwner != $data['user_id']) {
             $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
             $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
-
+            dump($this->redis->get($data['message_id']));
             ChatHelper::nullifyUnWriteCount($chatId, $data['user_id'], $this->redis);
 
             $this->redis->close();
@@ -202,7 +202,7 @@ class MessageController
     }
 
 
-    public function forward(array $data) :array
+    public function forward(array $data): array
     {
         $userId = $data['user_id'];
 
@@ -222,7 +222,7 @@ class MessageController
                 $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('id', $messageId)->first()->toArray() : $redisForwardMessageData;
                 $attachments = $messageData['attachments'] ?? null;
 
-                $checkUserInChatMembers = UserHelper::CheckUserInChatMembers( (int) $data['user_id'],$chatId,$this->redis);
+                $checkUserInChatMembers = UserHelper::CheckUserInChatMembers((int)$data['user_id'], $chatId, $this->redis);
                 dump($messageData);
                 if ($messageData && $checkUserInChatMembers) {
                     // создать сообщение и добавить в чат
@@ -245,7 +245,7 @@ class MessageController
                         'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}")
                     ];
                     $multiResponseData['responses'][$i]['cmd'] = 'message:create';
-                    $multiResponseData['responses'][$i]['notify_users'] = ChatHelper::getChatMembers($chatId,$this->redis);
+                    $multiResponseData['responses'][$i]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
                     $multiResponseData['responses'][$i]['data'] = [
                         "status" => true,
                         "write" => MessageController::NO_WRITE,
@@ -275,11 +275,41 @@ class MessageController
         }
 
 
-
         $multiResponseData['multi_response'] = true;
 
         return $multiResponseData;
     }
 
+
+    public function getChatMessageByType(array $data): array
+    {
+        $page = $data['page'] ?? 1;
+        $onePageCount = 20;
+
+        $start = $onePageCount * $page - $onePageCount;
+        $end = $start + $onePageCount;
+
+        $messages = Manager::table('messages')
+            ->where('status', '>=', 0)
+            ->whereIn('type', ChatHelper::getMessageTypeForMessageListInChat($data['type']))
+            ->orderByDesc('time')
+            ->skip($end)
+            ->take($onePageCount)
+            ->get();
+
+        $response = [];
+        $response['pagination'] = [
+            'page' => $page,
+            'count' => $onePageCount
+        ];
+
+        foreach ($messages as $message) {
+            $response['data'][] = [
+              ''
+            ];
+        }
+
+
+    }
 
 }

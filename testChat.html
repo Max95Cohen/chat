@@ -20,8 +20,8 @@ nfv
 
     let chatList = false;
     var user_id = 113631;
-    var chat_id = 364;
-    var userToken = 'f040d0094870e454d0b60dc92e5a3d25e556a2d5';
+    var chat_id = 9162;
+    var userToken = 'ccf560dff886ae1c7a2fc8c92c3d55d2576097ae';
     var message_id = "message:113631:4816";
 
     //908102
@@ -53,7 +53,7 @@ nfv
         //     data: {
         //         user_id: user_id,
         //         userToken: userToken,
-        //         phone:'77002611596',
+        //         phone:'77714010175',
         //     }
         //
         // }));
@@ -133,7 +133,7 @@ nfv
         //
         // }));
 
-        // // получение всех чатов с пагинацией
+        // // // получение всех чатов с пагинацией
         socket.send(JSON.stringify({
             cmd: 'chats:get',
             data: {
@@ -145,16 +145,16 @@ nfv
         }));
 
         // // получение одного чата
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:get',
-        //     data: {
-        //         user_id: user_id,
-        //         chat_id:chat_id,
-        //         page:1,
-        //         // divider:1,
-        //         userToken: userToken,
-        //     }
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:get',
+            data: {
+                user_id: user_id,
+                chat_id:chat_id,
+                page:1,
+                // divider:1,
+                userToken: userToken,
+            }
+        }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',
@@ -189,8 +189,8 @@ nfv
         //     data: {
         //         user_id: 113631,
         //         chat_id: chat_id,
-        //         message_id: 'message:30220:97',
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
+        //         message_id: 'message:105744:456',
+        //         userToken: userToken,
         //     }
         //
         // }));
@@ -326,6 +326,17 @@ nfv
         //     }
         //
         // }));
+
+
+        // socket.send(JSON.stringify({
+        //         cmd: 'chat:delete',
+        //         data: {
+        //             user_id: user_id,
+        //             chat_id: chat_id,
+        //             userToken: userToken,
+        //         }
+        //
+        //     }));
 
     });
 

@@ -70,6 +70,12 @@ class RouterController
             'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
 
+        'chat:delete' =>[
+            'action' => 'MemberController@deleteChat',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
+        ],
+
 
         //messageController
         'message:create' => [

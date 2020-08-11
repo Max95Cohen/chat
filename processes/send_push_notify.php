@@ -57,9 +57,9 @@ while (true) {
                     foreach ($chatMembers as $k => $chatMember) {
                         $messUserId = $message['user_id'];
                         $checkOnline = $redis->exists("Customer:{$chatMember}");
+                        $checkMute = $redis->get("u:mute:ch:{$chatMember}",$chat->id);
 
-
-                        if ($messUserId == $chatMember || !$checkOnline) {
+                        if ($messUserId == $chatMember || !$checkOnline || $checkMute) {
                             continue;
                         }
                         $memberFcmToken = $redis->hGet("Customer:{$chatMember}", 'fcm');

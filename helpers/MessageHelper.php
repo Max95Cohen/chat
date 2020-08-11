@@ -132,9 +132,14 @@ class MessageHelper
      */
     public static function getResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
+
+        $chatId = intval($data['chat_id']);
+        $type = ChatHelper::getChatMembers($chatId,$redis) > 2 ? ChatController::GROUP : ChatController::PRIVATE;
+
         return [
             'status' => 'true',
             'write' => self::MESSAGE_NO_WRITE_STATUS,
+            'mute' =>$redis->zRangeByScore("u:mute:ch:{$data['user_id']}",$data['chat_id'],$data['chat_id']) == [] ? ChatController::CHAT_UNMUTE : ChatController::CHAT_MUTE,
             'chat_id' => $data['chat_id'],
             'message_id' => $messageRedisKey,
             'user_id' => $data['user_id'],
@@ -142,6 +147,8 @@ class MessageHelper
             'avatar' => $redis->get("user:avatar:{$data['user_id']}"),
             'avatar_url' => self::AVATAR_URL,
             'user_name' => $redis->get("user:name:{$data['user_id']}"),
+            'chat_name' => ChatHelper::getChatName($type,$chatId,$data['user_id'],$redis),
+            'chat_type' => $type
         ];
     }
 

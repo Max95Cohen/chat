@@ -11,6 +11,11 @@ use Redis;
 
 class ChatHelper
 {
+
+    const MEDIA_TYPE_FOR_MESSAGE_LIST = 0;
+    const FILES_TYPE_FOR_MESSAGE_LIST = 1;
+    const AUDIO_TYPE_FOR_MESSAGE_LIST = 2;
+
     /**
      * @param int $chatId
      * @param Redis $redis
@@ -43,7 +48,7 @@ class ChatHelper
      * @param Redis $redis
      * @return string
      */
-    public static function getChatName(int $type, int $chatId, int $userId, Redis $redis): string
+    public static function getChatName(int $type, int $chatId, int $userId, Redis $redis): ?string
     {
         if ($type == ChatController::PRIVATE) {
             $chatUsers = $redis->zRange("chat:members:$chatId", 0, -1);
@@ -119,6 +124,23 @@ class ChatHelper
         $mute =  $redis->zRangeByScore("u:mute:ch:{$userId}",$chatId,$chatId);
         return $mute == [] ? ChatController::CHAT_UNMUTE : ChatController::CHAT_MUTE;
     }
+
+    /**
+     * @param int $type
+     * @return array
+     */
+    public static function getMessageTypeForMessageListInChat(int $type)
+    {
+        switch ($type) {
+            case self::MEDIA_TYPE_FOR_MESSAGE_LIST :
+                return [MessageHelper::IMAGE_MESSAGE_TYPE,MessageHelper::VIDEO_MESSAGE_TYPE];
+            case self::FILES_TYPE_FOR_MESSAGE_LIST :
+                return [MessageHelper::DOCUMENT_MESSAGE_TYPE];
+            case self::AUDIO_TYPE_FOR_MESSAGE_LIST :
+                return [MessageHelper::VOICE_MESSAGE_TYPE];
+        }
+    }
+
 
 
 }

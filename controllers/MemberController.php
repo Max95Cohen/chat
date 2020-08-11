@@ -16,7 +16,7 @@ use Traits\RedisTrait;
 class MemberController
 {
     use RedisTrait;
-
+    const BOT_ID = 13;
 
     /**
      * @param array $data
@@ -124,7 +124,7 @@ class MemberController
                 'banned_time' => $bannedTime,
             ]);
         Manager::table('chats')->where('id', $chatId)->decrement('members_count', 1);
-
+        $chatData = Manager::table('chats')->where('id', $chatId)->first();
 
         $adminName = $this->redis->get("user:name:{$data['user_id']}");
         $deletedMemberName = $this->redis->get("user:name:{$data['member_id']}");
@@ -132,7 +132,7 @@ class MemberController
 
         //создание сообщения об удалении пользователя
         $delMessageRedisKey = "user:delete:chat:{$chatId}:{$bannedMemberId}";
-        $this->redis->hSet($delMessageRedisKey, 'user_id', 13);
+        $this->redis->hSet($delMessageRedisKey, 'user_id', self::BOT_ID);
         $this->redis->hSet($delMessageRedisKey, 'text', "$adminName исключил(а) $deletedMemberName из группы");
         $this->redis->hSet($delMessageRedisKey, 'chat_id', $chatId);
         $this->redis->hSet($delMessageRedisKey, 'status', 1);
@@ -144,12 +144,42 @@ class MemberController
         $this->redis->zAdd('all:messages', ['NX'], $bannedTime, $delMessageRedisKey);
         $this->redis->set("user:delete:in:chat:{$bannedMemberId}:{$chatId}", $bannedTime);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
+        $chatMembersCount = $this->redis->zCount("chat:members:{$chatId}",ChatController::SUBSCRIBER,ChatController::OWNER);
+
+        //@TODO это говнокод далее напишу хелпер пока просто проверяю
+
+        $multiResponseData['responses'][0]['cmd'] = 'message:create';
+        $multiResponseData['responses'][0]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
+        $multiResponseData['responses'][0]['data'] = [
+            "message_id" =>$delMessageRedisKey,
+            "status"=>true,
+            "mute" =>ChatController::CHAT_MUTE,
+            "write" => 1,
+            "chat_id" => $data['chat_id'],
+            "user_id" => self::BOT_ID,
+            "time" => $bannedTime - 1,
+            "avatar" => UserHelper::getUserAvatar(self::BOT_ID,$this->redis),
+            "avatar_url" => MessageHelper::AVATAR_URL,
+            "user_name" => '',
+            "chat_name" => $chatData->name,
+            "chat_type" => $chatData->type,
+            "text" => "$adminName исключил(а) $deletedMemberName из группы",
+            "type" => MessageHelper::SYSTEM_MESSAGE_TYPE,
+        ];
+
+
+        $multiResponseData['responses'][1]['cmd'] = 'chat:members:delete';
+        $multiResponseData['responses'][1]['notify_users'] = $data['user_id'];
+        $multiResponseData['responses'][1]['data'] = [
             'status' => 'true',
             'chat_id' => $chatId,
-            'user_id' => $bannedMemberId
-        ]);
+            'user_id' => $bannedMemberId,
+            'member_count' =>$chatMembersCount
+        ];
 
+        $multiResponseData['multi_response'] = true;
+
+        return $multiResponseData;
     }
 
 
@@ -328,6 +358,10 @@ class MemberController
 
     }
 
+    /**
+     * @param array $data
+     * @return array[]
+     */
     public function deleteChat(array $data)
     {
         $userId = $data['user_id'];
@@ -340,8 +374,12 @@ class MemberController
         } else {
             $this->redis->zRem("user:chats:{$userId}", $chatId);
             $this->redis->zRem("user:chat:members:{$chatId}",$userId);
-            // @TODO логика создания сообщения
         }
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+            "chat_id" => $chatId,
+            "status" => true
+        ]);
 
 
     }
