@@ -104,6 +104,12 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
         $redis->hSet($redisKey,'type',MessageHelper::IMAGE_MESSAGE_TYPE);
         $redis->hSet($redisKey,'mime_type',$data['mime_type']);
 
+        $text = $data['text'] ?? null;
+
+        if ($text) {
+            $redis->hSet($redisKey,'text',$data['text']);
+        }
+
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
 
@@ -118,6 +124,13 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
+
+        $text = $redis->hGet($messageRedisKey,'text');
+
+        if ($text) {
+            $messageData['text'] = $redis->hGet($messageRedisKey,'text');
+        }
+
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::IMAGE_MESSAGE_TYPE;
 

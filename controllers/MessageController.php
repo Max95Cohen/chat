@@ -300,14 +300,13 @@ class MessageController
         $start = $onePageCount * $page - $onePageCount;
         $messages = Manager::table('messages')
             ->where('status', '>=', 0)
-            ->where('chat_id',$data['chat_id'])
+            ->where('chat_id', $data['chat_id'])
             ->whereIn('type', ChatHelper::getMessageTypeForMessageListInChat($data['type']))
             ->orderByDesc('time')
             ->skip($start)
             ->take($onePageCount)
             ->get()
             ->toArray();
-
 
         $response = [];
         $response['pagination'] = [
@@ -318,12 +317,25 @@ class MessageController
         $callFunctionForResponse = "get$type";
 
         foreach ($messages as $message) {
-            $responseItems[] = GetResponseForMessageType::$callFunctionForResponse($responseItems,$message,$this->redis);
-        }
 
+            if ($message->attachments) {
+
+                $attachments = json_decode($message->attachments, true) ?? null;
+
+                if ($attachments) {
+                    foreach ($attachments as $attachment) {
+                        $responseItems[] = GetResponseForMessageType::$callFunctionForResponse($message, $this->redis, $attachment);
+                    }
+                }
+            } else {
+                $responseItems[] = GetResponseForMessageType::$callFunctionForResponse($message, $this->redis);
+            }
+
+
+        }
         $response['data'] = $responseItems;
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$response);
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $response);
 
     }
 

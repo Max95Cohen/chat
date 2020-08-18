@@ -144,10 +144,13 @@ class TextMessage implements MessageInterface
             $messageData =$messageDataInMysql->toArray();
         }
 
+        $status = $messageData['status'] ?? null;
+
+
         if ($messageData) {
             return [
                 'message_id' => $messageId,
-                'text' => $messageData['text'],
+                'text' => $status == MessageHelper::MESSAGE_DELETED_STATUS ? "удалено" : $messageData['text'],
                 'type' => MessageHelper::TEXT_MESSAGE_TYPE,
                 'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
                 'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
