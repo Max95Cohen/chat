@@ -70,6 +70,7 @@ class MysqlStrategy
                     'chat_id' => $forwardMessage['chat_id'],
                     'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}")
                 ];
+                $message->text = $forwardMessage['text'] ?? null;
             }
             $messageClass = Factory::getItem($messageType);
             $edit = $message->edit ?? 0;

@@ -76,6 +76,7 @@ class RedisStrategy implements MessageStrategyInterface
                         'chat_id' => $forwardMessage['chat_id'],
                         'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}")
                     ];
+                    $message['text'] = $forwardMessage['text'];
                 }
 
                 $messageAnotherUserId = $message['another_user_id'] ?? null;

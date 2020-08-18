@@ -1,1 +1,4 @@
 vendor
+config
+http-server.php
+socket.php

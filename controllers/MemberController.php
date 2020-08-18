@@ -147,7 +147,7 @@ class MemberController
         $chatMembersCount = $this->redis->zCount("chat:members:{$chatId}",ChatController::SUBSCRIBER,ChatController::OWNER);
 
         //@TODO это говнокод далее напишу хелпер пока просто проверяю
-
+        $multiResponseData = [];
         $multiResponseData['responses'][0]['cmd'] = 'message:create';
         $multiResponseData['responses'][0]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
         $multiResponseData['responses'][0]['data'] = [
@@ -169,7 +169,7 @@ class MemberController
 
 
         $multiResponseData['responses'][1]['cmd'] = 'chat:members:delete';
-        $multiResponseData['responses'][1]['notify_users'] = $data['user_id'];
+        $multiResponseData['responses'][1]['notify_users'] = [$data['user_id']];
         $multiResponseData['responses'][1]['data'] = [
             'status' => 'true',
             'chat_id' => $chatId,

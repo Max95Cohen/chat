@@ -70,10 +70,10 @@ class RouterController
             'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
 
-        'chat:delete' =>[
+        'chat:delete' => [
             'action' => 'MemberController@deleteChat',
             'params' => true,
-            'middleware' => [CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
+            'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
 
@@ -151,6 +151,24 @@ class RouterController
             'middleware' => [CheckUserTokenMiddleware::class, CheckChatExistMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
 
+        'chat:message:by:type' => [
+            'action' => 'MessageController@getChatMessageByType',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class, CheckChatExistMiddleware::class, CheckUserInChatMembersMiddleware::class],
+        ],
+
+
+        'user:settings:get' => [
+            'action' => 'SettingsController@getSettings',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
+        ],
+
+        'user:settings:set' => [
+            'action' => 'SettingsController@setSettings',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
+        ],
 
         //test
         'test:ping' => [

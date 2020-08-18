@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Helpers\ChatHelper;
+use Helpers\GetResponseForMessageType;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
@@ -227,15 +228,18 @@ class MessageController
                 if ($messageData && $checkUserInChatMembers) {
                     // создать сообщение и добавить в чат
 
-                    $messageId = $this->redis->incrBy("user:message:{$userId}", 1);
-                    $this->redis->hSet($messageId, 'text', $messageData['text']);
-                    $this->redis->hSet($messageId, 'chat_id', $chatId);
-                    $this->redis->hSet($messageId, 'user_id', $data['user_id']);
-                    $this->redis->hSet($messageId, 'status', MessageController::NO_WRITE);
-                    $this->redis->hSet($messageId, 'time', time());
-                    $this->redis->hSet($messageId, 'type', $messageData['type']);
-                    $this->redis->hSet($messageId, 'attachments', $attachments);
-                    $this->redis->hSet($messageId, 'forward_message_id', $messageId);
+                    $messageRedisСount = $this->redis->incrBy("user:message:{$userId}", 1);
+
+                    $messageRedisId = "user:message:{$userId}:$messageRedisСount";
+
+                    $this->redis->hSet($messageRedisId, 'text', $messageData['text']);
+                    $this->redis->hSet($messageRedisId, 'chat_id', $chatId);
+                    $this->redis->hSet($messageRedisId, 'user_id', $data['user_id']);
+                    $this->redis->hSet($messageRedisId, 'status', MessageController::NO_WRITE);
+                    $this->redis->hSet($messageRedisId, 'time', time());
+                    $this->redis->hSet($messageRedisId, 'type', $messageData['type']);
+                    $this->redis->hSet($messageRedisId, 'attachments', $attachments);
+                    $this->redis->hSet($messageRedisId, 'forward_message_id', $messageId);
 
                     $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
                     $forwardData = [
@@ -250,9 +254,10 @@ class MessageController
                         "status" => true,
                         "write" => MessageController::NO_WRITE,
                         "chat_id" => $chatId,
-                        "message_id" => $messageId,
+                        "message_id" => $messageRedisId,
                         "user_id" => $data['user_id'],
                         "time" => time(),
+                        "text" => $messageData['text'] ?? null,
                         "avatar" => $avatar == false ? "noAvatar.png" : $avatar,
                         "avatar_url" => MessageHelper::AVATAR_URL,
                         "user_name" => $this->redis->get("user:name:{$data['user_id']}"),
@@ -281,21 +286,28 @@ class MessageController
     }
 
 
+    /**
+     * @param array $data
+     * @return array
+     */
     public function getChatMessageByType(array $data): array
     {
         $page = $data['page'] ?? 1;
         $onePageCount = 20;
+        $type = ucfirst($data['type']);
+        $responseItems = [];
 
         $start = $onePageCount * $page - $onePageCount;
-        $end = $start + $onePageCount;
-
         $messages = Manager::table('messages')
             ->where('status', '>=', 0)
+            ->where('chat_id',$data['chat_id'])
             ->whereIn('type', ChatHelper::getMessageTypeForMessageListInChat($data['type']))
             ->orderByDesc('time')
-            ->skip($end)
+            ->skip($start)
             ->take($onePageCount)
-            ->get();
+            ->get()
+            ->toArray();
+
 
         $response = [];
         $response['pagination'] = [
@@ -303,12 +315,15 @@ class MessageController
             'count' => $onePageCount
         ];
 
+        $callFunctionForResponse = "get$type";
+
         foreach ($messages as $message) {
-            $response['data'][] = [
-              ''
-            ];
+            $responseItems[] = GetResponseForMessageType::$callFunctionForResponse($responseItems,$message,$this->redis);
         }
 
+        $response['data'] = $responseItems;
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$response);
 
     }
 

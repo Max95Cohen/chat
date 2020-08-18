@@ -128,12 +128,15 @@ class ChatController
 
                 $lastMessageTime = $lastMessageTime == "" ? $chatStartTime : $lastMessageTime;
 
+                $forwardMessageId = $lastMessage['forward_message_id'] ?? null;
+
+
 
                 $lastMessageData = [
                     'message_id' => $lastMessageId ?? '',
                     'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
                     'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
-                    'text' => $lastMessageText ?? '',
+                    'text' => $forwardMessageId ? $this->redis->hGet($forwardMessageId,'text') : ($lastMessageText ?? ''),
                     'time' => $lastMessageTime,
                     'type' => $type,
                     'message_for_type' => $messageForType,
@@ -270,6 +273,14 @@ class ChatController
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
         $mute = $data['mute'] ?? self::CHAT_MUTE;
+
+        if ($mute == 'all') {
+            $this->redis->set("u:ch:all:m:{$userId}",true);
+
+            return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+                'mute' => "all",
+            ]);
+        }
 
         if ($mute == self::CHAT_MUTE) {
             $this->redis->zAdd("u:mute:ch:{$userId}",['NX'],$chatId,$chatId);

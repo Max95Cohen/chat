@@ -12,9 +12,10 @@ use Redis;
 class ChatHelper
 {
 
-    const MEDIA_TYPE_FOR_MESSAGE_LIST = 0;
-    const FILES_TYPE_FOR_MESSAGE_LIST = 1;
-    const AUDIO_TYPE_FOR_MESSAGE_LIST = 2;
+    const MEDIA_TYPE_FOR_MESSAGE_LIST = 'media';
+    const FILES_TYPE_FOR_MESSAGE_LIST = 'files';
+    const AUDIO_TYPE_FOR_MESSAGE_LIST = 'audio';
+    const LINKS_TYPE_FOR_MESSAGE_LIST = 'links';
 
     /**
      * @param int $chatId
@@ -129,7 +130,7 @@ class ChatHelper
      * @param int $type
      * @return array
      */
-    public static function getMessageTypeForMessageListInChat(int $type)
+    public static function getMessageTypeForMessageListInChat(string $type)
     {
         switch ($type) {
             case self::MEDIA_TYPE_FOR_MESSAGE_LIST :
@@ -138,6 +139,9 @@ class ChatHelper
                 return [MessageHelper::DOCUMENT_MESSAGE_TYPE];
             case self::AUDIO_TYPE_FOR_MESSAGE_LIST :
                 return [MessageHelper::VOICE_MESSAGE_TYPE];
+            case self::LINKS_TYPE_FOR_MESSAGE_LIST :
+                return [MessageHelper::LINK_MESSAGE_TYPE];
+
         }
     }
 

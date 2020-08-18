@@ -135,6 +135,8 @@ class MessageHelper
 
         $chatId = intval($data['chat_id']);
         $type = ChatHelper::getChatMembers($chatId,$redis) > 2 ? ChatController::GROUP : ChatController::PRIVATE;
+        dump($data['chat_id']);
+        dump($redis->zRange("u:mute:ch:{$data['user_id']}",0,-1));
 
         return [
             'status' => 'true',

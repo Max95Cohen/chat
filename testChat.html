@@ -19,9 +19,9 @@ nfv
     let YerbolatUserId = 113629;
 
     let chatList = false;
-    var user_id = 113631;
-    var chat_id = 9162;
-    var userToken = 'ccf560dff886ae1c7a2fc8c92c3d55d2576097ae';
+    var user_id = 116222;
+    var chat_id = 69888;
+    var userToken = 'ea7d694d60ef22b709d71c42183106f2bb2631a6';
     var message_id = "message:113631:4816";
 
     //908102
@@ -39,8 +39,8 @@ nfv
         // socket.send(JSON.stringify({
         //     cmd: 'test:ping',
         //     data: {
-        //         user_id: 105744,
-        //         userToken: "90dbbcea8dc03012b3194b7b7cbf96d2946523f5",
+        //         user_id: user_id,
+        //         userToken: userToken,
         //     }
         //
         // }));
@@ -63,8 +63,8 @@ nfv
         //     cmd: 'chat:create',
         //     data: {
         //         user_id: user_id,
-        //         userToken: "dd3e50f5e7d1118c517a219816fbcafaa2abbbd5_1546883897_1",
-        //         user_ids:'105744,1',
+        //         userToken: userToken,
+        //         user_ids:'105744,1114',
         //         chat_name:"sad name",
         //         type:1,
         //     }
@@ -134,27 +134,39 @@ nfv
         // }));
 
         // // // получение всех чатов с пагинацией
+        // socket.send(JSON.stringify({
+        //     cmd: 'chats:get',
+        //     data: {
+        //         user_id: user_id,
+        //         page:1,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
+
         socket.send(JSON.stringify({
-            cmd: 'chats:get',
+            cmd: 'chat:message:by:type',
             data: {
                 user_id: user_id,
                 page:1,
                 userToken: userToken,
+                chat_id:5,
+                type:'audio'
             }
-
+            //Links
         }));
 
         // // получение одного чата
-        socket.send(JSON.stringify({
-            cmd: 'chat:get',
-            data: {
-                user_id: user_id,
-                chat_id:chat_id,
-                page:1,
-                // divider:1,
-                userToken: userToken,
-            }
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:get',
+        //     data: {
+        //         user_id: user_id,
+        //         chat_id:chat_id,
+        //         page:1,
+        //         // divider:1,
+        //         userToken: userToken,
+        //     }
+        // }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',
@@ -169,13 +181,14 @@ nfv
         // }));
         //chat:members:delete
 
+        // удаление подписчика
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:delete',
         //     data: {
         //         user_id: user_id,
         //         chat_id:chat_id,
         //         userToken: userToken,
-        //         member_id:113626,
+        //         member_id:1114,
         //     }
         //
         // }));
@@ -286,8 +299,8 @@ nfv
         //         cmd: 'message:forward',
         //         data: {
         //             user_id: user_id,
-        //             chat_id:'364,365',
-        //             forward_messages_id:"message:113631:5195",
+        //             chat_id:'5,4',
+        //             forward_messages_id:"message:116222:10",
         //             message_id:message_id,
         //             userToken:userToken,
         //         }
@@ -306,7 +319,7 @@ nfv
         // }));
 
         // socket.send(JSON.stringify({
-        //     cmd: 'chat:member:search',e
+        //     cmd: 'chat:member:search',
         //     data: {
         //         user_id: user_id,
         //         chat_id:161,
@@ -337,6 +350,29 @@ nfv
         //         }
         //
         //     }));
+
+
+        // socket.send(JSON.stringify({
+        //         cmd: 'user:settings:set',
+        //         data: {
+        //             user_id: user_id,
+        //             settings: {
+        //                 "chat_all_mute":1,
+        //             },
+        //             userToken: userToken,
+        //         }
+        //
+        //     }));
+        //
+        // socket.send(JSON.stringify({
+        //     cmd: 'user:settings:get',
+        //     data: {
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
+
 
     });
 

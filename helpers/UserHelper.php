@@ -12,6 +12,21 @@ class UserHelper
 {
 
     const DEFAULT_AVATAR = 'noAvatar.png';
+    const SETTING_CHAT_MUTE_ALL = 'chat_all_mute';
+
+
+    /**
+     * @return string[]
+     */
+    public static function getAllSettingsKeys () :array
+    {
+        return [
+          self::  SETTING_CHAT_MUTE_ALL,
+        ];
+    }
+
+
+
 
     /**
      * @param $userId
