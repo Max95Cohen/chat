@@ -136,23 +136,6 @@ class MessageController
 
         $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
 
-        // @TODO временный код для проверки валидатора
-        if ($data['validate']) {
-            $validator = new MessageWriteValidation();
-            $validateErrors = $validator->validate($data);
-
-
-            if ($validateErrors) {
-                return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
-                        'errors' => $validateErrors,
-                        'status' => false,
-                    ]
-                );
-            }
-        }
-        // @TODO END
-
-
         if ($messageOwner != $data['user_id']) {
             $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
             $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
