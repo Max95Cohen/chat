@@ -110,7 +110,7 @@ class ChatController
 
 
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
-                $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
+                $messageForType =  MessageHelper::getAttachmentTypeString($type) ?? null;
                 $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
 
                 $lastMessageText = $lastMessage['text'] ?? null;
@@ -136,7 +136,7 @@ class ChatController
                     'message_id' => $lastMessageId ?? '',
                     'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
                     'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
-                    'text' => $forwardMessageId ? $this->redis->hGet($forwardMessageId,'text') : ($lastMessageText ?? ''),
+                    'text' => $forwardMessageId ? MessageHelper::getMessageText($forwardMessageId,$this->redis) : ($lastMessageText ?? ''),
                     'time' => $lastMessageTime,
                     'type' => $type,
                     'message_for_type' => $messageForType,

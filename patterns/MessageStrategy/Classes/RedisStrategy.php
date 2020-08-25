@@ -67,9 +67,17 @@ class RedisStrategy implements MessageStrategyInterface
                 $forwardData = null;
 
                 if ($forwardMessageId) {
+                    $forwardMessage = $this->redis->hGetAll($forwardMessageId);
+                    $forwardMessageInMysql = Manager::table("messages")->where('id', $forwardMessageId)->first();
 
-                    $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id', $forwardMessageId)->first()->toArray();
+                    if (!$forwardMessageInMysql && !$forwardMessage){
+                        continue;
+                    }
+                    $forwardMessage = $forwardMessage == [] ? $forwardMessageInMysql->toArray() : $forwardMessage;
+
                     $avatar = $this->redis->get("user_avatar:{$forwardMessage['user_id']}");
+                    $forwardText = $forwardMessage['text'] ?? null;
+
                     $forwardData = [
                         'user_id' => $forwardMessage['user_id'],
                         'avatar' => $avatar == false ? 'noAvatar.png' : $avatar,
@@ -77,7 +85,7 @@ class RedisStrategy implements MessageStrategyInterface
                         'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}"),
                         'user_name' =>$this->redis->get("user:name:{$forwardMessage['user_id']}")
                     ];
-                    $message['text'] = $forwardMessage['text'];
+                    $message['text'] = $forwardText;
                 }
 
                 if ($messageType == MessageHelper::STICKER_MESSAGE_TYPE && $attachments) {
@@ -98,6 +106,13 @@ class RedisStrategy implements MessageStrategyInterface
                 $messageAnotherUserId = $message['another_user_id'] ?? null;
                 $extension = $message['extension'] ?? null;
                 $messageTime = $message['time'] ?? $chatStartTime;
+                $checkTime = $message['time'] ?? null;
+
+                //@TODO temporary fix
+
+                if (!$checkTime) {
+                    continue;
+                }
 
 
                 $messagesForDivider[] = [

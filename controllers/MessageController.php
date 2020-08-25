@@ -236,9 +236,10 @@ class MessageController
 
                     $messageRedisCount = $this->redis->incrBy("user:message:{$userId}", 1);
 
-                    $messageRedisId = "user:message:{$userId}:$messageRedisCount";
+                    $messageRedisId = "message:{$userId}:$messageRedisCount";
+                    $forwardText = $messageData['text'] ?? null;
 
-                    $this->redis->hSet($messageRedisId, 'text', $messageData['text']);
+                    $this->redis->hSet($messageRedisId, 'text', $forwardText);
                     $this->redis->hSet($messageRedisId, 'chat_id', $chatId);
                     $this->redis->hSet($messageRedisId, 'user_id', $data['user_id']);
                     $this->redis->hSet($messageRedisId, 'status', MessageController::NO_WRITE);

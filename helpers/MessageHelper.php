@@ -292,5 +292,15 @@ class MessageHelper
         ];
     }
 
+    /**
+     * @param string $messageId
+     * @param Redis $redis
+     * @return string|null
+     */
+    public static function getMessageText(string $messageId, Redis $redis)
+    {
+        $text = $redis->hGet($messageId,'text');
+        return $text === false ? "" : $text;
+    }
 
 }
