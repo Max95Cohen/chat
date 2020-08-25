@@ -20,7 +20,7 @@ nfv
 
     let chatList = false;
     var user_id = 116222;
-    var chat_id = 5;
+    var chat_id = 4;
     var userToken = '0ad2617ba7ed2d30bbcd533c3aa3915d2db84240';
     var message_id = "message:30220:40";
 
@@ -80,18 +80,18 @@ nfv
 
         // let iCount = 10;
         // for (let i = 0; i < iCount; i++) {
-        //     socket.send(JSON.stringify({
-        //         cmd: 'message:create',
-        //         data: {
-        //             user_id: 30220,
-        //             userToken: "sad",
-        //             chat_id: 18508,
-        //             message_type: 0,
-        //             text:"sad text",
-        //             attachments:null,
-        //         }
-        //
-        //     }));
+            socket.send(JSON.stringify({
+                cmd: 'message:create',
+                data: {
+                    user_id: user_id,
+                    userToken: userToken,
+                    chat_id: chat_id,
+                    message_type: 0,
+                    text:"sad text",
+                    attachments:null,
+                }
+
+            }));
         //     //
         // }
         //

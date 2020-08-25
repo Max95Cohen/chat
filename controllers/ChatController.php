@@ -155,7 +155,7 @@ class ChatController
                 $responseData[] = [
                     'id' => $chatId,
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
-                    'name' => ChatHelper::getChatName($chat->type, $chat->id, $data['user_id'], $this->redis),
+                    'name' => ChatHelper::getChatName($chat->id, $data['user_id'], $this->redis),
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0,

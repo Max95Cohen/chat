@@ -52,8 +52,10 @@ class ChatHelper
      * @param Redis $redis
      * @return string
      */
-    public static function getChatName(int $type, int $chatId, int $userId, Redis $redis): ?string
+    public static function getChatName(int $chatId, int $userId, Redis $redis): ?string
     {
+        $type = self::getChatType($chatId,$redis);
+
         if ($type == ChatController::PRIVATE) {
             $chatUsers = $redis->zRange("chat:members:$chatId", 0, -1);
 
@@ -177,6 +179,22 @@ class ChatHelper
        return $redis->zRange("chat:{$chatId}",0,0)[0];
     }
 
+    /**
+     * @param int $chatId
+     * @param Redis $redis
+     * @return int
+     */
+    public static function getChatType(int $chatId, Redis $redis) :int
+    {
+        $chatTypeInRedis = $redis->get("chat:t:{$chatId}");
 
+        $chatType = $chatTypeInRedis ===false ? Manager::table('chats')->where('id',$chatId)->value('type') :$chatTypeInRedis;
+
+        if (!$chatTypeInRedis) {
+            $redis->set("chat:t:{$chatId}",$chatType);
+        }
+
+        return $chatType;
+    }
 
 }

@@ -135,9 +135,6 @@ class MessageHelper
     {
 
         $chatId = intval($data['chat_id']);
-        $type = ChatHelper::getChatMembers($chatId,$redis) > 2 ? ChatController::GROUP : ChatController::PRIVATE;
-        dump($data['chat_id']);
-        dump($redis->zRange("u:mute:ch:{$data['user_id']}",0,-1));
 
         return [
             'status' => 'true',
@@ -150,8 +147,8 @@ class MessageHelper
             'avatar' => $redis->get("user:avatar:{$data['user_id']}"),
             'avatar_url' => self::AVATAR_URL,
             'user_name' => $redis->get("user:name:{$data['user_id']}"),
-            'chat_name' => ChatHelper::getChatName($type,$chatId,$data['user_id'],$redis),
-            'chat_type' => $type
+            'chat_name' => ChatHelper::getChatName($data['chat_id'],$data['user_id'],$redis),
+            'chat_type' => ChatHelper::getChatType($chatId,$redis)
         ];
     }
 
