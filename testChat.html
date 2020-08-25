@@ -49,16 +49,16 @@ nfv
 
         // проверяет контакты пользователя
         // check user phone exists
-        socket.send(JSON.stringify({
-            cmd: 'user:check',
-            data: {
-                user_id: user_id,
-                userToken: userToken,
-                validation: true,
-                // phone:'77714010175',
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'user:check',
+        //     data: {
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //         validation: true,
+        //         // phone:'77714010175',
+        //     }
+        //
+        // }));
 
         // создает чат
         // socket.send(JSON.stringify({
@@ -80,18 +80,18 @@ nfv
 
         // let iCount = 10;
         // for (let i = 0; i < iCount; i++) {
-            socket.send(JSON.stringify({
-                cmd: 'message:create',
-                data: {
-                    user_id: user_id,
-                    userToken: userToken,
-                    chat_id: chat_id,
-                    message_type: 0,
-                    text:"sad text",
-                    attachments:null,
-                }
-
-            }));
+        //     socket.send(JSON.stringify({
+        //         cmd: 'message:create',
+        //         data: {
+        //             user_id: user_id,
+        //             userToken: userToken,
+        //             chat_id: chat_id,
+        //             message_type: 0,
+        //             text:"sad text",
+        //             attachments:null,
+        //         }
+        //
+        //     }));
         //     //
         // }
         //
@@ -135,15 +135,15 @@ nfv
         // }));
 
         // // // получение всех чатов с пагинацией
-        // socket.send(JSON.stringify({
-        //     cmd: 'chats:get',
-        //     data: {
-        //         user_id: user_id,
-        //         page:1,
-        //         userToken: userToken,
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chats:get',
+            data: {
+                user_id: user_id,
+                page:1,
+                userToken: userToken,
+            }
+
+        }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:message:by:type',

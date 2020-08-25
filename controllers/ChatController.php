@@ -161,7 +161,7 @@ class ChatController
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0,
                     'avatar_url' => $chat->type == ChatController::GROUP ? MessageHelper::GROUP_AVATAR_URL : MessageHelper::AVATAR_URL,
                     'another_user_id' => $anotherUserId,
-                    'another_user_phone' => $this->redis->get("user:phone:{$anotherUserId}"),
+                    'another_user_phone' => $this->redis->get("userId:phone:{$anotherUserId}"),
                     'last_message' => $lastMessageData,
                     'time' => $bannedTime ?? $lastMessageTime,
                     'members' => $chatMembersData ?? null,

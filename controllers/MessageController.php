@@ -234,9 +234,9 @@ class MessageController
                 if ($messageData && $checkUserInChatMembers) {
                     // создать сообщение и добавить в чат
 
-                    $messageRedisСount = $this->redis->incrBy("user:message:{$userId}", 1);
+                    $messageRedisCount = $this->redis->incrBy("user:message:{$userId}", 1);
 
-                    $messageRedisId = "user:message:{$userId}:$messageRedisСount";
+                    $messageRedisId = "user:message:{$userId}:$messageRedisCount";
 
                     $this->redis->hSet($messageRedisId, 'text', $messageData['text']);
                     $this->redis->hSet($messageRedisId, 'chat_id', $chatId);
@@ -247,8 +247,6 @@ class MessageController
                     $this->redis->hSet($messageRedisId, 'attachments', $attachments);
                     $this->redis->hSet($messageRedisId, 'forward_message_id', $messageId);
 
-                    dump($this->redis->hGetAll($messageRedisId));
-
                     $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
                     $forwardData = [
                         'user_id' => $messageData['user_id'],
@@ -257,6 +255,9 @@ class MessageController
                         'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}"),
                         'user_name' => $this->redis->get("user:name:{$messageData['user_id']}")
                     ];
+
+                    $messageForType = MessageHelper::getAttachmentTypeString($messageData['type']) ?? null;
+
                     $multiResponseData['responses'][$i]['cmd'] = 'message:create';
                     $multiResponseData['responses'][$i]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
                     $multiResponseData['responses'][$i]['data'] = [
@@ -274,8 +275,8 @@ class MessageController
                         'forward_message_id' => $messageId,
                         'forward_data' => json_encode($forwardData),
                         'type' => $messageData['type'],
+                        'message_for_type' => $messageForType,
                     ];
-                    dump($multiResponseData);
                     ++$i;
                     // добавляем сообщение в общий список сообщений
 
