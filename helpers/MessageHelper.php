@@ -23,6 +23,7 @@ class MessageHelper
     const MONEY_MESSAGE_TYPE = 11;
     const LINK_MESSAGE_TYPE = 12;
     const FORWARD_MESSAGE_TYPE = 13;
+    const STICKER_MESSAGE_TYPE = 14;
 
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
@@ -30,8 +31,8 @@ class MessageHelper
     const MESSAGE_DELETED_STATUS = -1;
     const MESSAGE_DELETED_SELF_STATUS = -2;
 
-    const AVATAR_URL = 'https://indigo24.xyz/uploads/avatars/';
-
+    const AVATAR_URL = INDIGO_URL.'uploads/avatars/';
+    const GROUP_AVATAR_URL ='https://media.chat.indigo24.xyz/media/group/';
 
     public static function getMessageIncorrectFormat($allMessages, Redis $redis)
     {
@@ -169,11 +170,13 @@ class MessageHelper
             case self::VOICE_MESSAGE_TYPE:
                 return "Голосовое сообщение";
             case self::VIDEO_MESSAGE_TYPE:
-                return "видео";
+                return "Видео";
             case self::LINK_MESSAGE_TYPE:
                 return "ссылка";
             case self::MONEY_MESSAGE_TYPE:
-                return "деньги";
+                return "Деньги";
+            case self::STICKER_MESSAGE_TYPE:
+                return "Стикер";
         }
     }
 
@@ -267,6 +270,29 @@ class MessageHelper
     {
         $chatId = $redis->get("private:{$userId}:{$anotherUserId}");
         return $chatId === false ? $redis->get("private:{$anotherUserId}:{$userId}") : $chatId;
+    }
+
+
+    /**
+     * @return int[]
+     */
+    public static function getMessageTypes() :array
+    {
+        return [
+            self::TEXT_MESSAGE_TYPE,
+            self::IMAGE_MESSAGE_TYPE,
+            self::DOCUMENT_MESSAGE_TYPE,
+            self::VOICE_MESSAGE_TYPE,
+            self::VIDEO_MESSAGE_TYPE,
+            self::SYSTEM_MESSAGE_TYPE,
+            self::SYSTEM_MESSAGE_DIVIDER_TYPE,
+            self::GEO_POINT_MESSAGE_TYPE,
+            self::REPLY_MESSAGE_TYPE,
+            self::MONEY_MESSAGE_TYPE,
+            self::LINK_MESSAGE_TYPE,
+            self::FORWARD_MESSAGE_TYPE,
+            self::STICKER_MESSAGE_TYPE,
+        ];
     }
 
 

@@ -16,6 +16,8 @@ class ChatHelper
     const FILES_TYPE_FOR_MESSAGE_LIST = 'files';
     const AUDIO_TYPE_FOR_MESSAGE_LIST = 'audio';
     const LINKS_TYPE_FOR_MESSAGE_LIST = 'links';
+    const GROUP_AVATAR_URL = 'https://indigo24.xyz/media/group/';
+
 
     /**
      * @param int $chatId
@@ -39,6 +41,7 @@ class ChatHelper
             'name' => $data['chat_name'],
             'type' => $data['type'],
             'members_count' => $memberCount,
+            'avatar' => $data['avatar'] ?? null
         ]);
     }
 
@@ -96,12 +99,23 @@ class ChatHelper
      * @param int $chatId
      * @param Redis $redis
      * @param array $chatMembers
+     * @param int $inr
      */
-    public static function incrUnWriteCountForMembers(int $chatId, Redis $redis, array $chatMembers): void
+    public static function incrUnWriteCountForMembers(int $chatId, Redis $redis, array $chatMembers,$inr=1): void
     {
         foreach ($chatMembers as $chatMember) {
-            $redis->incr("usr:unw:{$chatMember}:{$chatId}", 1);
+            $redis->incr("usr:unw:{$chatMember}:{$chatId}", $inr);
         }
+
+        if ($inr == -1) {
+            $unw = $redis->get("usr:unw:{$chatMember}:{$chatId}");
+
+            if ($unw <0) {
+                $redis->set("usr:unw:{$chatMember}:{$chatId}",0);
+            }
+
+        }
+
     }
 
     /**
@@ -134,8 +148,6 @@ class ChatHelper
     {
         switch ($type) {
             case self::MEDIA_TYPE_FOR_MESSAGE_LIST :
-                return [MessageHelper::IMAGE_MESSAGE_TYPE,MessageHelper::VIDEO_MESSAGE_TYPE];
-            case self::FILES_TYPE_FOR_MESSAGE_LIST :
                 return [MessageHelper::DOCUMENT_MESSAGE_TYPE];
             case self::AUDIO_TYPE_FOR_MESSAGE_LIST :
                 return [MessageHelper::VOICE_MESSAGE_TYPE];
@@ -143,6 +155,26 @@ class ChatHelper
                 return [MessageHelper::LINK_MESSAGE_TYPE];
 
         }
+    }
+
+
+    /**
+     * @param string $messageId
+     * @param Redis $redis
+     */
+    public static function setLastReadMessageIdInChat(string $messageId, Redis $redis) :void
+    {
+        $redis->set("u:ch:l:id",$messageId);
+    }
+
+    /**
+     * @param int $chatId
+     * @param Redis $redis
+     * @return string
+     */
+    public static function getLastMessageIdInChat(int $chatId, Redis $redis) :string
+    {
+       return $redis->zRange("chat:{$chatId}",0,0)[0];
     }
 
 

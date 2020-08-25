@@ -5,9 +5,9 @@ use Helpers\ChatHelper;
 use Helpers\ConfigHelper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
+use Illuminate\Support\Str;
 
 require __DIR__ . '/vendor/autoload.php';
-
 
 $capsule = new Manager();
 

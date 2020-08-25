@@ -67,7 +67,7 @@ class UserController
         $chatId = $data['chat_id'];
 
         $this->redis->set("user:taping:{$chatId}:{$userId}", 1, 4);
-        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", ChatController::OWNER, 100);
+        $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER);
         $tapingMembers = [];
 
         foreach ($chatMembers as $member) {

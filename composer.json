@@ -12,7 +12,8 @@
         "nesbot/carbon": "^2.35",
         "intervention/image": "^2.5",
         "gumlet/php-image-resize": "^1.9",
-        "kreait/firebase-php": "^5.4"
+        "kreait/firebase-php": "^5.4",
+        "vlucas/valitron": "^1.4"
     },
     "autoload": {
         "psr-4": {
@@ -20,7 +21,8 @@
             "Helpers\\": "helpers",
             "Patterns\\": "patterns",
             "Middlewars\\": "middlewars",
-            "Traits\\": "traits"
+            "Traits\\": "traits",
+            "Validation\\": "validation"
         }
     },
     "require-dev": {

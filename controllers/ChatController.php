@@ -64,7 +64,7 @@ class ChatController
      * @return array[]
      */
     public function create(array $data)
-    {
+    {  
 
         $data = Factory::getItem($data['type'])->create($data, $this->redis);
 
@@ -159,7 +159,7 @@ class ChatController
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
                     'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0,
-                    'avatar_url' => MessageHelper::AVATAR_URL,
+                    'avatar_url' => $chat->type == ChatController::GROUP ? MessageHelper::GROUP_AVATAR_URL : MessageHelper::AVATAR_URL,
                     'another_user_id' => $anotherUserId,
                     'another_user_phone' => $this->redis->get("user:phone:{$anotherUserId}"),
                     'last_message' => $lastMessageData,
@@ -301,6 +301,34 @@ class ChatController
             'mute' => self::CHAT_UNMUTE,
         ]);
 
+
+
+    }
+
+
+    /**
+     * @param array $data
+     * @return array[]
+     */
+    public function setChatAvatar(array $data)
+    {
+        $chatId = $data['chat_id'];
+        $avatar = $data['file_name'];
+
+        $this->redis->set("group:avatar{$chatId}");
+        Manager::table('chats')
+            ->where('id',$chatId)
+            ->where('type',ChatController::GROUP)
+            ->update([
+            'avatar' => $avatar
+        ]);
+
+        $notifyUsers = ChatHelper::getChatMembers($chatId,$this->redis);
+
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,[
+            'avatar' => $avatar,
+            'avatar_url' => ChatHelper::GROUP_AVATAR_URL
+        ]);
 
 
     }

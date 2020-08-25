@@ -42,6 +42,11 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         array (
             'Webmozart\\Assert\\' => 17,
         ),
+        'V' => 
+        array (
+            'Valitron\\' => 9,
+            'Validation\\' => 11,
+        ),
         'T' => 
         array (
             'Traits\\' => 7,
@@ -154,6 +159,14 @@ class ComposerStaticInit25fe9d03b6b8816e321a280f5cae9989
         'Webmozart\\Assert\\' => 
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
+        ),
+        'Valitron\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/vlucas/valitron/src/Valitron',
+        ),
+        'Validation\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/validation',
         ),
         'Traits\\' => 
         array (

@@ -34,7 +34,7 @@ while (true) {
         $redis->set("userId:phone:{$user->id}", $user->phone);
         $redis->set("user:phone:{$phoneInCorrectFormat}", $user->id);
 
-        $redis->del("user:phone:{$user->id}");
+//        $redis->del("user:phone:{$user->id}");
 
 
     }

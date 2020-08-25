@@ -13,6 +13,15 @@ use Traits\RedisTrait;
 class GetResponseForMessageType
 {
 
+    const MESSAGE_TYPES = [
+        'Links',
+        'Media',
+        'Audio',
+        'Files',
+    ];
+
+
+
     /**
      * @param $message
      * @param Redis|null $redis

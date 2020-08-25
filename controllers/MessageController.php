@@ -12,6 +12,7 @@ use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
 use Redis;
 use Traits\RedisTrait;
+use Validation\MessageWriteValidation;
 
 class MessageController
 {
@@ -81,10 +82,11 @@ class MessageController
 
 
         $notifyUsers = $this->redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, 100);
-        dump($notifyUsers);
+
         $chatMembersWithNotAuthor = $notifyUsers;
+
         unset($chatMembersWithNotAuthor[$userId]);
-        dump($notifyUsers);
+
         foreach ($notifyUsers as $notifyUser) {
             $this->redis->zAdd("user:chats:{$notifyUser}", ['XX'], $data['message_time'], $chatId);
         }
@@ -134,6 +136,23 @@ class MessageController
 
         $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
 
+        // @TODO временный код для проверки валидатора
+        if ($data['validate']) {
+            $validator = new MessageWriteValidation();
+            $validateErrors = $validator->validate($data);
+
+
+            if ($validateErrors) {
+                return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
+                        'errors' => $validateErrors,
+                        'status' => false,
+                    ]
+                );
+            }
+        }
+        // @TODO END
+
+
         if ($messageOwner != $data['user_id']) {
             $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
             $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
@@ -147,6 +166,7 @@ class MessageController
                 'message_id' => $messageId,
                 'owner_id' => $messageOwner,
                 'write' => strval(MessageController::WRITE),
+                'status' => true,
             ]);
         }
 
@@ -180,6 +200,9 @@ class MessageController
         $this->redis->set("all:delete:{$data['message_id']}", 1);
 
         $notifyUsers = ChatHelper::getChatMembers((int)$data['chat_id'], $this->redis);
+
+        ChatHelper::incrUnWriteCountForMembers($data['chat_id'], $this->redis, $notifyUsers, -1);
+
         $this->redis->close();
 
         return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $data);
@@ -241,12 +264,15 @@ class MessageController
                     $this->redis->hSet($messageRedisId, 'attachments', $attachments);
                     $this->redis->hSet($messageRedisId, 'forward_message_id', $messageId);
 
+                    dump($this->redis->hGetAll($messageRedisId));
+
                     $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
                     $forwardData = [
                         'user_id' => $messageData['user_id'],
                         'avatar' => $avatar == false ? "noAvatar.png" : $avatar,
                         'chat_id' => $messageData['chat_id'],
-                        'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}")
+                        'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}"),
+                        'user_name' => $this->redis->get("user:name:{$messageData['user_id']}")
                     ];
                     $multiResponseData['responses'][$i]['cmd'] = 'message:create';
                     $multiResponseData['responses'][$i]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
@@ -272,8 +298,15 @@ class MessageController
 
                     $this->redis->zAdd('all:messages', ['NX'], self::NO_WRITE, "message:$userId:$messageId");
 
-                    MessageHelper::addMessageInChat($this->redis, $chatId, $messageId);
+                    MessageHelper::addMessageInChat($this->redis, $chatId, $messageRedisId);
 
+                    $chatMembersWithNotAuthor = ChatHelper::getChatMembers($chatId, $this->redis);
+                    unset($chatMembersWithNotAuthor[$userId]);
+
+                    // ставим последнее время для фильтрации чатов в списке пользователя
+                    $this->redis->zAdd("user:chats:{$userId}", ['NX'], time(), $chatId);
+
+                    ChatHelper::incrUnWriteCountForMembers($chatId, $this->redis, $chatMembersWithNotAuthor);
                 }
 
             }

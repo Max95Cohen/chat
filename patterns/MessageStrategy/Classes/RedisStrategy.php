@@ -74,10 +74,26 @@ class RedisStrategy implements MessageStrategyInterface
                         'user_id' => $forwardMessage['user_id'],
                         'avatar' => $avatar == false ? 'noAvatar.png' : $avatar,
                         'chat_id' => $forwardMessage['chat_id'],
-                        'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}")
+                        'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}"),
+                        'user_name' =>$this->redis->get("user:name:{$forwardMessage['user_id']}")
                     ];
                     $message['text'] = $forwardMessage['text'];
                 }
+
+                if ($messageType == MessageHelper::STICKER_MESSAGE_TYPE && $attachments) {
+                    $attachments = json_decode($attachments,true);
+                    $stickerId = $attachments['stick_id'];
+
+                    $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
+
+                    $attachments = [
+                        'stick_id' => $stickerId,
+                        'path' => $sticker['path']
+                    ];
+
+                }
+
+
 
                 $messageAnotherUserId = $message['another_user_id'] ?? null;
                 $extension = $message['extension'] ?? null;
