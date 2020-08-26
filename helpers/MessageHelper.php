@@ -31,6 +31,8 @@ class MessageHelper
     const MESSAGE_DELETED_STATUS = -1;
     const MESSAGE_DELETED_SELF_STATUS = -2;
 
+    const MESSAGE_COUNT_IN_REDIS = 40;
+
     const AVATAR_URL = INDIGO_URL.'uploads/avatars/';
     const GROUP_AVATAR_URL ='https://media.chat.indigo24.xyz/media/group/';
 
@@ -302,5 +304,39 @@ class MessageHelper
         $text = $redis->hGet($messageId,'text');
         return $text === false ? "" : $text;
     }
+
+    /**
+     * @param int $unReadCount
+     * @param int $chatId
+     * @param Redis $redis
+     * @return mixed
+     */
+    public static function getLastReadMessageId(int $unReadCount, int $chatId, Redis $redis)
+    {
+        if ($unReadCount <= self::MESSAGE_COUNT_IN_REDIS) {
+            $message = $redis->zRange("chat:{$chatId}",$unReadCount,$unReadCount);
+
+            if ($message) {
+                return $message[0];
+            }
+
+        }
+
+        if ($unReadCount > self::MESSAGE_COUNT_IN_REDIS) {
+            $message = Manager::table("messages")
+                ->where('chat_id',$chatId)
+                ->skip($unReadCount-1)
+                ->first();
+
+            return $message->redis_id;
+        }
+
+        $message = $redis->zRange("chat:{$chatId}",-1,-1);
+        return $message[0];
+
+    }
+
+
+
 
 }

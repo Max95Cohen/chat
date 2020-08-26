@@ -152,20 +152,22 @@ class ChatController
                     ];
                 }
 
+                $unreadMessageCount = $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0;
                 $responseData[] = [
                     'id' => $chatId,
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
                     'name' => ChatHelper::getChatName($chat->id, $data['user_id'], $this->redis),
                     'type' => $chat->type,
                     'members_count' => $chat->members_count,
-                    'unread_messages' => $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0,
+                    'unread_messages' => $unreadMessageCount,
                     'avatar_url' => $chat->type == ChatController::GROUP ? MessageHelper::GROUP_AVATAR_URL : MessageHelper::AVATAR_URL,
                     'another_user_id' => $anotherUserId,
                     'another_user_phone' => $this->redis->get("userId:phone:{$anotherUserId}"),
                     'last_message' => $lastMessageData,
                     'time' => $bannedTime ?? $lastMessageTime,
                     'members' => $chatMembersData ?? null,
-                    'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis)
+                    'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis),
+                    'last_read_message_id' => MessageHelper::getLastReadMessageId($unreadMessageCount,$chatId,$this->redis)
                 ];
 
 

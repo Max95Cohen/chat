@@ -16,7 +16,7 @@ class ChatHelper
     const FILES_TYPE_FOR_MESSAGE_LIST = 'files';
     const AUDIO_TYPE_FOR_MESSAGE_LIST = 'audio';
     const LINKS_TYPE_FOR_MESSAGE_LIST = 'links';
-    const GROUP_AVATAR_URL = 'https://indigo24.xyz/media/group/';
+    const GROUP_AVATAR_URL = 'https://indigo24.com/media/images/';
 
 
     /**

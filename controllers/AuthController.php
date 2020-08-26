@@ -10,6 +10,10 @@ use Redis;
 class AuthController
 {
 
+    /**
+     * @param array $params
+     * @return array[]
+     */
     public function init(array $params)
     {
         $userId = $params['user_id'];

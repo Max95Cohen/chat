@@ -39,7 +39,6 @@ class MessageController
         $this->redis->incrBy("user:message:{$userId}", 1);
         $messageId = $this->redis->get("user:message:{$userId}");
 
-
         $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
 
         $messageRedisKey = "message:$userId:$messageId";
@@ -238,15 +237,37 @@ class MessageController
 
                     $messageRedisId = "message:{$userId}:$messageRedisCount";
                     $forwardText = $messageData['text'] ?? null;
+                    $replyMessageId = $messageData['reply_message_id'] ?? null;
+
+
+
+                    $replyData = null;
+                    $replyMessageType = null;
+                    if ($replyMessageId) {
+
+                        $replyMessageType = $this->redis->hGet($replyMessageId, 'type') ?? Manager::table('messages')
+                                ->where('redis_id', $replyMessageId)
+                                ->orWhere('id', $replyMessageId)
+                                ->value('type');
+
+                        $replyMessageClass = Factory::getItem($replyMessageType);
+                        $replyData = $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis);
+                    }
+
+                    $messageType = $replyMessageType ?? $messageData['type'];
+
 
                     $this->redis->hSet($messageRedisId, 'text', $forwardText);
                     $this->redis->hSet($messageRedisId, 'chat_id', $chatId);
                     $this->redis->hSet($messageRedisId, 'user_id', $data['user_id']);
                     $this->redis->hSet($messageRedisId, 'status', MessageController::NO_WRITE);
                     $this->redis->hSet($messageRedisId, 'time', time());
-                    $this->redis->hSet($messageRedisId, 'type', $messageData['type']);
+                    $this->redis->hSet($messageRedisId, 'type', $messageType);
                     $this->redis->hSet($messageRedisId, 'attachments', $attachments);
                     $this->redis->hSet($messageRedisId, 'forward_message_id', $messageId);
+                    $this->redis->hSet($messageRedisId, 'reply_message_id', $replyMessageId);
+
+
 
                     $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
                     $forwardData = [
@@ -256,6 +277,7 @@ class MessageController
                         'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}"),
                         'user_name' => $this->redis->get("user:name:{$messageData['user_id']}")
                     ];
+
 
                     $messageForType = MessageHelper::getAttachmentTypeString($messageData['type']) ?? null;
 
@@ -274,7 +296,9 @@ class MessageController
                         "user_name" => $this->redis->get("user:name:{$data['user_id']}"),
                         'attachments' => $attachments,
                         'forward_message_id' => $messageId,
-                        'forward_data' => json_encode($forwardData),
+                        'reply_message_id' => $replyMessageId,
+                        'forward_data' => $forwardData,
+                        'reply_data'=>$replyData,
                         'type' => $messageData['type'],
                         'message_for_type' => $messageForType,
                     ];
