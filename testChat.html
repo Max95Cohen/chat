@@ -20,7 +20,7 @@ nfv
 
     let chatList = false;
     var user_id = 116222;
-    var chat_id = 5;
+    var chat_id = 3;
     var userToken = '14a4026d2038ff66f041d172ee33891e82b55425';
     var message_id = "message:30220:40";
 
@@ -135,15 +135,15 @@ nfv
         // }));
 
         // // // получение всех чатов с пагинацией
-        socket.send(JSON.stringify({
-            cmd: 'chats:get',
-            data: {
-                user_id: user_id,
-                page:1,
-                userToken: userToken,
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chats:get',
+        //     data: {
+        //         user_id: user_id,
+        //         page:1,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:message:by:type',
@@ -159,16 +159,16 @@ nfv
         // }));
 
         // // получение одного чата
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:get',
-        //     data: {
-        //         user_id: user_id,
-        //         chat_id:chat_id,
-        //         page:1,
-        //         // divider:1,
-        //         userToken: userToken,
-        //     }
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'chat:get',
+            data: {
+                user_id: user_id,
+                chat_id:chat_id,
+                page:1,
+                // divider:1,
+                userToken: userToken,
+            }
+        }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:members:privileges',

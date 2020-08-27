@@ -16,6 +16,13 @@
           </advancedOptions>
         </fileTransfer>
       </webServer>
+      <webServer id="d8b34f20-6b48-4a25-a30b-35c6f2ac990b" name="remote-test-chat">
+        <fileTransfer rootFolder="/var/www/testChat" accessType="SFTP" host="indigo24.xyz" port="33044" sshConfigId="6635ce08-1e90-4627-8bd0-2e162a0c2b9c" sshConfig="gennady@indigo24.xyz:33044 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

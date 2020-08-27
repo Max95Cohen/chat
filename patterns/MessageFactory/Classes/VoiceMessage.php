@@ -109,7 +109,8 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             'user_id' => $messageData['user_id'],
             'attachments' => array_shift($attachments),
             'attachments_url' => self::getMediaUrl(),
-            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE)
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE),
+            'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
         ];
     }
     /**
@@ -156,5 +157,8 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             'edit' => 1,
         ];
     }
+
+
+
 
 }

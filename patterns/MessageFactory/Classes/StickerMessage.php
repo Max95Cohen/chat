@@ -66,7 +66,8 @@ class StickerMessage implements MessageInterface
             'user_id' => $messageData['user_id'],
             'attachments' => array_shift($attachments),
             'attachments_url' => StickerController::STICKER_URL,
-            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::STICKER_MESSAGE_TYPE)
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::STICKER_MESSAGE_TYPE),
+            'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
         ];
     }
 
