@@ -135,15 +135,15 @@ nfv
         // }));
 
         // // // получение всех чатов с пагинацией
-        socket.send(JSON.stringify({
-            cmd: 'chats:get',
-            data: {
-                user_id: user_id,
-                page:1,
-                userToken: userToken,
-            }
-
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'chats:get',
+        //     data: {
+        //         user_id: user_id,
+        //         page:1,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
 
         // socket.send(JSON.stringify({
         //     cmd: 'chat:message:by:type',
@@ -394,6 +394,27 @@ nfv
         //     }
         //
         // }));
+
+
+        socket.send(JSON.stringify({
+            cmd: 'contact:save',
+            data: {
+                user_id: user_id,
+                userToken: userToken,
+                phone:'77076562348'
+            }
+
+        }));
+
+        // socket.send(JSON.stringify({
+        //     cmd: 'contact:get',
+        //     data: {
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //     }
+        //
+        // }));
+
 
 
 

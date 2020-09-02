@@ -47,7 +47,6 @@ while (true) {
                 $attachments = $message['attachments'] ?? null;
                 $messageText = $attachments ? MessageHelper::getAttachmentTypeString($message['type']) : $message['text'];
 
-
                 if ($chat && is_array($chatMembers)) {
 
                     $chatName = $chat->name ?? $redis->get("user:name:{$message['user_id']}");
@@ -125,7 +124,6 @@ while (true) {
                     }
 
                     curl_multi_close($mh);
-
 
                 }
 

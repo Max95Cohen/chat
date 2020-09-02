@@ -181,6 +181,23 @@ class RouterController
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class, CheckPrivilegesForAddGroupChat::class],
         ],
 
+        //ContactController
+
+
+        'contact:save'=>[
+            'action' => 'ContactController@save',
+            'params' => true,
+            'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
+        ],
+
+        'contact:get'=>[
+            'action' => 'ContactController@get',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
+        ],
+
+
+
 
         //test
         'test:ping' => [

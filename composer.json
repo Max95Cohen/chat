@@ -13,7 +13,8 @@
         "intervention/image": "^2.5",
         "gumlet/php-image-resize": "^1.9",
         "kreait/firebase-php": "^5.4",
-        "vlucas/valitron": "^1.4"
+        "vlucas/valitron": "^1.4",
+        "ext-curl": "*"
     },
     "autoload": {
         "psr-4": {
