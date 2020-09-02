@@ -73,6 +73,12 @@ class VideoMessage
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
     {
+        $text = $data['text'] ?? null;
+
+        if ($text) {
+            $redis->hSet($redisKey,'text',$text);
+        }
+
         $redis->hSet($redisKey,'type',MessageHelper::VIDEO_MESSAGE_TYPE);
         $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
     }
@@ -88,6 +94,7 @@ class VideoMessage
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
+        $messageData['text'] = $redis->hGet($messageRedisKey,'text');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VIDEO_MESSAGE_TYPE;
         return $messageData;

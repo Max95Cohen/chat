@@ -16,6 +16,7 @@ use Traits\RedisTrait;
 class MemberController
 {
     use RedisTrait;
+
     const BOT_ID = 13;
 
     /**
@@ -144,21 +145,21 @@ class MemberController
         $this->redis->zAdd('all:messages', ['NX'], $bannedTime, $delMessageRedisKey);
         $this->redis->set("user:delete:in:chat:{$bannedMemberId}:{$chatId}", $bannedTime);
 
-        $chatMembersCount = $this->redis->zCount("chat:members:{$chatId}",ChatController::SUBSCRIBER,ChatController::OWNER);
+        $chatMembersCount = $this->redis->zCount("chat:members:{$chatId}", ChatController::SUBSCRIBER, ChatController::OWNER);
 
         //@TODO это говнокод далее напишу хелпер пока просто проверяю
         $multiResponseData = [];
         $multiResponseData['responses'][0]['cmd'] = 'message:create';
         $multiResponseData['responses'][0]['notify_users'] = ChatHelper::getChatMembers($chatId, $this->redis);
         $multiResponseData['responses'][0]['data'] = [
-            "message_id" =>$delMessageRedisKey,
-            "status"=>true,
-            "mute" =>ChatController::CHAT_MUTE,
+            "message_id" => $delMessageRedisKey,
+            "status" => true,
+            "mute" => ChatController::CHAT_MUTE,
             "write" => 1,
             "chat_id" => $data['chat_id'],
             "user_id" => self::BOT_ID,
             "time" => $bannedTime - 1,
-            "avatar" => UserHelper::getUserAvatar(self::BOT_ID,$this->redis),
+            "avatar" => UserHelper::getUserAvatar(self::BOT_ID, $this->redis),
             "avatar_url" => MessageHelper::AVATAR_URL,
             "user_name" => '',
             "chat_name" => $chatData->name,
@@ -174,7 +175,7 @@ class MemberController
             'status' => 'true',
             'chat_id' => $chatId,
             'user_id' => $bannedMemberId,
-            'member_count' =>$chatMembersCount
+            'member_count' => $chatMembersCount
         ];
 
         $multiResponseData['multi_response'] = true;
@@ -280,6 +281,9 @@ class MemberController
     //@TODO отрефакторить и вынести в хелпер создание сообщения и поиск подпискичка тоже
     public function chatLeave(array $data)
     {
+        $chatId = $data['chat_id'];
+
+
         $this->redis->zRem("chat:members:{$data['chat_id']}", $data['user_id']);
         $bannedTime = time();
         Manager::table("chat_members")
@@ -310,12 +314,40 @@ class MemberController
         // тут оно добавляется в список всех сообщений чата
         $this->redis->zAdd("chat:{$data['chat_id']}", ['NX'], time(), $delMessageRedisKey);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
-            'status' => 'true',
-            'user_id' => $data['user_id'],
-            'chat_id' => $data['chat_id'],
-            'members_count' => $this->redis->zCount("chat:members:{$data['chat_id']}", ChatController::OWNER, '+inf'),
-        ]);
+
+        // all chat users
+
+        $chatMembers = ChatHelper::getChatMembers($chatId,$this->redis);
+        array_push($chatMembers,$data['user_id']);
+
+        $multiResponseData = [];
+
+        $botId = self::BOT_ID;
+        $multiResponseData['responses'][0]['cmd'] = 'message:create';
+        $multiResponseData['responses'][0]['notify_users'] = $chatMembers;
+        $multiResponseData['responses'][0]['data'] = [
+            'status' => true,
+            'write' => 1,
+            'chat_id' => $chatId,
+            'message_id' => $delMessageRedisKey,
+            'user_id' => $botId,
+            'time' => $bannedTime,
+            'text' => " $deletedMemberName вышел из группы",
+            'avatar' => UserHelper::DEFAULT_AVATAR,
+            "avatar_url" => MessageHelper::AVATAR_URL,
+            'user_name' => $this->redis->get("user:name:{$botId}"),
+            'attachments' => null,
+            'forward_message_id' => null,
+            'reply_message_id' => null,
+            'forward_data' => null,
+            'reply_data' => null,
+            'type' => MessageHelper::SYSTEM_MESSAGE_TYPE
+        ];
+
+        $multiResponseData['multi_response'] = true;
+        $multiResponseData['members_count'] = $this->redis->zCount("chat:members:{$data['chat_id']}", ChatController::SUBSCRIBER, '+inf');
+        dump($multiResponseData);
+        return $multiResponseData;
 
     }
 
@@ -373,10 +405,10 @@ class MemberController
             $this->redis->zRem("user:chats:{$userId}", $chatId);
         } else {
             $this->redis->zRem("user:chats:{$userId}", $chatId);
-            $this->redis->zRem("user:chat:members:{$chatId}",$userId);
+            $this->redis->zRem("user:chat:members:{$chatId}", $userId);
         }
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],[
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             "chat_id" => $chatId,
             "status" => true
         ]);
