@@ -155,6 +155,7 @@ class TextMessage implements MessageInterface
                 'user_avatar' => $redis->get("user:avatar:{$messageData['user_id']}"),
                 'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
                 'user_id' => $messageData['user_id'],
+                'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
             ];
         }
 

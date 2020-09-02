@@ -91,7 +91,8 @@ class LinkMessage implements MessageInterface
             'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
             'user_id' => $messageData['user_id'],
             'attachments' => array_shift($attachments),
-            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::LINK_MESSAGE_TYPE)
+            'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::LINK_MESSAGE_TYPE),
+            'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
         ];
     }
 

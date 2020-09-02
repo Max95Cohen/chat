@@ -60,6 +60,7 @@ class MoneyMessage implements MessageInterface
             'user_id' => $messageData['user_id'],
             'message_text_for_type' => MessageHelper::getAttachmentTypeString(MessageHelper::MONEY_MESSAGE_TYPE),
             'text' => $messageData['text'],
+            'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
         ];
     }
 
