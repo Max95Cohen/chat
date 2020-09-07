@@ -10,12 +10,13 @@ use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
 use Redis;
+use Traits\RedisTrait;
 
 class StickerMessage implements MessageInterface
 {
+    use RedisTrait;
 
-    const STICKER_MEDIA_DIR = 'media/stickers';
-
+    const STICKER_MEDIA_DIR = '/stickers';
 
     public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
@@ -34,7 +35,18 @@ class StickerMessage implements MessageInterface
     {
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
-        $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
+        $attachments = $redis->hGet($messageRedisKey,'attachments');
+
+        $stickerData = json_decode($attachments,true);
+        $stickerId = $stickerData['stick_id'];
+
+
+        $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
+
+        $messageData['attachments'] = [
+            'stick_id' =>$sticker['id'],
+            'path' => $sticker['path']
+        ];
 
         $messageData['attachment_url'] = StickerController::STICKER_URL;
         $messageData['type'] = MessageHelper::STICKER_MESSAGE_TYPE;
@@ -116,6 +128,9 @@ class StickerMessage implements MessageInterface
         ];
     }
 
-
+    public static function getMediaUrl()
+    {
+        return MEDIA_URL . self::STICKER_MEDIA_DIR .'/';
+    }
 
 }

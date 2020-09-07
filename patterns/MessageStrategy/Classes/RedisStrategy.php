@@ -6,6 +6,7 @@ namespace Patterns\MessageStrategy\Classes;
 use Carbon\Carbon;
 use Controllers\MessageController;
 use Helpers\ChatHelper;
+use Helpers\ForwardHelper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
@@ -78,13 +79,7 @@ class RedisStrategy implements MessageStrategyInterface
                     $avatar = $this->redis->get("user_avatar:{$forwardMessage['user_id']}");
                     $forwardText = $forwardMessage['text'] ?? null;
 
-                    $forwardData = [
-                        'user_id' => $forwardMessage['user_id'],
-                        'avatar' => $avatar == false ? 'noAvatar.png' : $avatar,
-                        'chat_id' => $forwardMessage['chat_id'],
-                        'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}"),
-                        'user_name' =>$this->redis->get("user:name:{$forwardMessage['user_id']}")
-                    ];
+                    $forwardData = ForwardHelper::getForwardFields($forwardMessage,$forwardMessageId,$this->redis);
                     $message['text'] = $forwardText;
                 }
 

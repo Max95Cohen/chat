@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Helpers\ChatHelper;
+use Helpers\ForwardHelper;
 use Helpers\GetResponseForMessageType;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
@@ -225,11 +226,11 @@ class MessageController
         foreach ($forwardChatIds as $chatId) {
             foreach ($messageIds as $messageId) {
                 $redisForwardMessageData = $this->redis->hGetAll($messageId);
-                $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('id', $messageId)->first()->toArray() : $redisForwardMessageData;
+                $messageData = $redisForwardMessageData == [] ? Manager::table('messages')->where('redis_id', $messageId)->first()->toArray() : $redisForwardMessageData;
                 $attachments = $messageData['attachments'] ?? null;
 
                 $checkUserInChatMembers = UserHelper::CheckUserInChatMembers((int)$data['user_id'], $chatId, $this->redis);
-                dump($messageData);
+
                 if ($messageData && $checkUserInChatMembers) {
                     // создать сообщение и добавить в чат
 
@@ -238,7 +239,6 @@ class MessageController
                     $messageRedisId = "message:{$userId}:$messageRedisCount";
                     $forwardText = $messageData['text'] ?? null;
                     $replyMessageId = $messageData['reply_message_id'] ?? null;
-
 
 
                     $replyData = null;
@@ -268,15 +268,8 @@ class MessageController
                     $this->redis->hSet($messageRedisId, 'reply_message_id', $replyMessageId);
 
 
-
                     $avatar = $this->redis->get("user_avatar:{$messageData['user_id']}");
-                    $forwardData = [
-                        'user_id' => $messageData['user_id'],
-                        'avatar' => $avatar == false ? "noAvatar.png" : $avatar,
-                        'chat_id' => $messageData['chat_id'],
-                        'chat_name' => $this->redis->get("user:name:{$messageData['user_id']}"),
-                        'user_name' => $this->redis->get("user:name:{$messageData['user_id']}")
-                    ];
+                    $forwardData = ForwardHelper::getForwardFields($messageData, $messageId, $this->redis);
 
 
                     $messageForType = MessageHelper::getAttachmentTypeString($messageData['type']) ?? null;
@@ -290,16 +283,13 @@ class MessageController
                         "message_id" => $messageRedisId,
                         "user_id" => $data['user_id'],
                         "time" => time(),
-                        "text" => $messageData['text'] ?? null,
                         "avatar" => $avatar == false ? "noAvatar.png" : $avatar,
                         "avatar_url" => MessageHelper::AVATAR_URL,
                         "user_name" => $this->redis->get("user:name:{$data['user_id']}"),
-                        'attachments' => $attachments,
                         'forward_message_id' => $messageId,
                         'reply_message_id' => $replyMessageId,
                         'forward_data' => $forwardData,
-                        'reply_data'=>$replyData,
-                        'type' => $messageData['type'],
+                        'type' => MessageHelper::FORWARD_MESSAGE_TYPE,
                         'message_for_type' => $messageForType,
                     ];
                     ++$i;
@@ -324,6 +314,7 @@ class MessageController
 
         $multiResponseData['multi_response'] = true;
 
+        $this->redis->close();
         return $multiResponseData;
     }
 

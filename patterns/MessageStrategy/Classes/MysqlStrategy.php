@@ -6,6 +6,7 @@ namespace Patterns\MessageStrategy\Classes;
 
 use Carbon\Carbon;
 use Controllers\MessageController;
+use Helpers\ForwardHelper;
 use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
@@ -63,15 +64,8 @@ class MysqlStrategy
             $forwardData = null;
             if ($forwardMessageId) {
                 $forwardMessage = $this->redis->hGetAll($forwardMessageId) ?? Manager::table("messages")->where('id', $forwardMessageId)->first()->toArray();
+                $forwardData =ForwardHelper::getForwardFields($forwardMessage,$firstMessageId,$this->redis);
 
-                $forwardData = [
-                    'user_id' => $forwardMessage['user_id'],
-                    'avatar' => $this->redis->get("user_avatar:{$forwardMessage['user_id']}"),
-                    'chat_id' => $forwardMessage['chat_id'],
-                    'chat_name' => $this->redis->get("user:name:{$forwardMessage['user_id']}"),
-                    'user_name' =>$this->redis->get("user:name:{$forwardMessage['user_id']}"),
-                ];
-                $message->text = $forwardMessage['text'] ?? null;
             }
             $messageClass = Factory::getItem($messageType);
             $edit = $message->edit ?? 0;

@@ -184,19 +184,23 @@ class RouterController
         //ContactController
 
 
-        'contact:save'=>[
+        'contact:save' => [
             'action' => 'ContactController@save',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
 
-        'contact:get'=>[
+        'contact:get' => [
             'action' => 'ContactController@get',
             'params' => true,
             'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
-
+        'check:user:id' => [
+            'action' => 'UserController@checkUserById',
+            'params' => true,
+            'middleware' => [ValidationMiddleware::class,CheckUserTokenMiddleware::class],
+        ],
 
 
         //test

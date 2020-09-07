@@ -78,19 +78,30 @@ nfv
         var messIds = [];
         var stickerId = {"stick_id":12}
 
-        // let iCount = 10;
-        // for (let i = 0; i < iCount; i++) {
+
+
+        socket.send(JSON.stringify({
+            cmd: 'check:user:id',
+            data: {
+                user_id: user_id,
+                userToken: userToken,
+                validation: true,
+                check_user_id:40,
+            }
+        }));
+
+
+        // // let iCount = 10;
+        // // for (let i = 0; i < iCount; i++) {
         //     socket.send(JSON.stringify({
         //         cmd: 'message:create',
         //         data: {
         //             user_id: user_id,
         //             userToken: userToken,
         //             chat_id: chat_id,
-        //             message_type: 0,
-        //             text:"sad text",
-        //             attachments:null,
+        //             message_type: 14,
+        //             attachments:{"stick_id":12},
         //         }
-        //
         //     }));
         //     //
         // }
@@ -302,8 +313,8 @@ nfv
         //         cmd: 'message:forward',
         //         data: {
         //             user_id: user_id,
-        //             chat_id:'9',
-        //             forward_messages_id:"message:116222:10",
+        //             chat_id:5,
+        //             forward_messages_id:"message:116222:5",
         //             userToken:userToken,
         //         }
         //

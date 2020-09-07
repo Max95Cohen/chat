@@ -4,6 +4,7 @@ namespace Patterns\MessageFactory;
 
 use Helpers\MessageHelper;
 use Patterns\MessageFactory\Classes\DocumentMessage;
+use Patterns\MessageFactory\Classes\ForwardMessage;
 use Patterns\MessageFactory\Classes\GeoPointMessage;
 use Patterns\MessageFactory\Classes\ImageMessage;
 use Patterns\MessageFactory\Classes\LinkMessage;
@@ -42,6 +43,8 @@ class Factory
                 return new MoneyMessage();
             case MessageHelper::STICKER_MESSAGE_TYPE:
                 return new StickerMessage();
+            case MessageHelper::FORWARD_MESSAGE_TYPE:
+                return new ForwardMessage();
 
         }
 

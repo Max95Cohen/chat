@@ -111,5 +111,30 @@ class UserController
 
     }
 
+    /**
+     * @param array $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function checkUserById(array $data) :array
+    {
+        $checkUserId = $data['check_user_id'] ?? null;
+
+        $chatId = $this->redis->get("private:{$checkUserId}:{$data['user_id']}");
+        $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$checkUserId}") : $chatId;
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
+            'status' => 'true',
+            'phone' => $this->redis->get("userId:phone:{$data['check_user_id']}"),
+            'user_id' => (int)$checkUserId,
+            'avatar' => $this->redis->get("user:avatar:{$checkUserId}"),
+            'name' => $this->redis->get("user:name:{$checkUserId}"),
+            'avatar_url' => MessageHelper::AVATAR_URL,
+            'chat_id' => $chatId,
+            'online' => UserHelper::checkOnline($checkUserId, $this->redis)
+        ]);
+
+    }
+
 
 }
