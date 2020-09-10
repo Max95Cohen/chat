@@ -20,8 +20,8 @@ class StickerMessage implements MessageInterface
 
     public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
-        $redis->hSet($redisKey,'type',MessageHelper::STICKER_MESSAGE_TYPE);
-        $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
+        $redis->hSet($redisKey, 'type', MessageHelper::STICKER_MESSAGE_TYPE);
+        $redis->hSet($redisKey, 'attachments', json_encode($data['attachments']));
     }
 
 
@@ -33,23 +33,26 @@ class StickerMessage implements MessageInterface
      */
     public function returnResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
-        $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
+        $messageData = MessageHelper::getResponseDataForCreateMessage($data, $messageRedisKey, $redis);
 
-        $attachments = $redis->hGet($messageRedisKey,'attachments');
+        $attachments = $redis->hGet($messageRedisKey, 'attachments');
 
-        $stickerData = json_decode($attachments,true);
+        $stickerData = json_decode($attachments, true);
         $stickerId = $stickerData['stick_id'];
 
 
         $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
 
-        $messageData['attachments'] = [
-            'stick_id' =>$sticker['id'],
+        $messageData['attachments'] = [[
+            'stick_id' => $sticker['id'],
             'path' => $sticker['path']
+        ]
         ];
+
 
         $messageData['attachment_url'] = StickerController::STICKER_URL;
         $messageData['type'] = MessageHelper::STICKER_MESSAGE_TYPE;
+        $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::STICKER_MESSAGE_TYPE) ?? null;
 
         return $messageData;
     }
@@ -68,7 +71,7 @@ class StickerMessage implements MessageInterface
             : $messageDataInRedis;
         //@TODO преписать через хелперскую функию вынести туда общие для всех классов поля и черех ... собирать в 1 массив
 
-        $attachments = json_decode($messageData['attachments'],true);
+        $attachments = json_decode($messageData['attachments'], true);
 
         return [
             'message_id' => $messageId,
@@ -130,7 +133,7 @@ class StickerMessage implements MessageInterface
 
     public static function getMediaUrl()
     {
-        return MEDIA_URL . self::STICKER_MEDIA_DIR .'/';
+        return MEDIA_URL . self::STICKER_MEDIA_DIR . '/';
     }
 
 }

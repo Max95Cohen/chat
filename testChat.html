@@ -76,19 +76,19 @@ nfv
 
         var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
         var messIds = [];
-        var stickerId = {"stick_id":12}
+        var stickerId = [{"stick_id":12}]
 
 
 
-        socket.send(JSON.stringify({
-            cmd: 'check:user:id',
-            data: {
-                user_id: user_id,
-                userToken: userToken,
-                validation: true,
-                check_user_id:40,
-            }
-        }));
+        // socket.send(JSON.stringify({
+        //     cmd: 'check:user:id',
+        //     data: {
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //         validation: true,
+        //         check_user_id:40,
+        //     }
+        // }));
 
 
         // // let iCount = 10;
