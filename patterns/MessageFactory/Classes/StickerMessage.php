@@ -45,11 +45,11 @@ class StickerMessage implements MessageInterface
 
         $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
 
-        $messageData['attachments'] = [[
+        $messageData['attachments'] = json_encode([[
             'stick_id' => $sticker['id'],
             'path' => $sticker['path']
         ]
-        ];
+        ],JSON_UNESCAPED_UNICODE);
 
 
         $messageData['attachment_url'] = StickerController::STICKER_URL;

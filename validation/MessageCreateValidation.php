@@ -5,12 +5,16 @@ namespace Validation;
 
 
 use Controllers\ChatController;
+use Helpers\ChatHelper;
 use Helpers\MessageHelper;
+use Traits\RedisTrait;
 use Validation\Interfaces\BaseValidationInterface;
 use Valitron\Validator;
 
 class MessageCreateValidation implements BaseValidationInterface
 {
+
+    use RedisTrait;
 
     /**
      * @param array $params
@@ -33,7 +37,6 @@ class MessageCreateValidation implements BaseValidationInterface
         $v->rule('in','message_type',MessageHelper::getMessageTypes());
 
 
-
         $v->rule("required",'phone');
         $v->rule("regex",'phone','#^\+\d{5,30}$|^\d{5,30}$#');
 
@@ -42,6 +45,14 @@ class MessageCreateValidation implements BaseValidationInterface
             ChatController::GROUP
         ]);
 
+        $checkIsBot = ChatHelper::checkIsChatBot($params['chat_id'],$this->redis);
+
+        $params['check_is_bot'] = $checkIsBot;
+
+        $v->rule('regex','check_is_bot',"#1#")->message("нельзя писать боту");
+
+
+        $this->redis->close();
         $v->validate();
 
         return $v->errors();

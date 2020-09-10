@@ -5,6 +5,7 @@ namespace Helpers;
 
 
 use Controllers\ChatController;
+use Controllers\MemberController;
 use Illuminate\Database\Capsule\Manager;
 use Illuminate\Database\Capsule\Manager as DB;
 use Redis;
@@ -196,5 +197,52 @@ class ChatHelper
 
         return $chatType;
     }
+
+    /**
+     * @param int $chat_id
+     * @param Redis $redis
+     * @return int
+     */
+    public static function getOnlineUsersCount(int $chat_id, Redis $redis) :int
+    {
+        $chatMembers = self::getChatMembers($chat_id,$redis);
+        $onlineCounter = 0;
+
+        foreach ($chatMembers as $chatMemberId) {
+
+            if ($redis->get("user:last:visit:{$chatMemberId}")){
+                ++$onlineCounter;
+            }
+
+        }
+        return $onlineCounter;
+
+    }
+
+
+    /**
+     * @param int $chatId
+     * @param Redis $redis
+     * @return bool
+     */
+    public static function checkIsChatBot(int $chatId, Redis $redis)
+    {
+        $chatMembers = ChatHelper::getChatMembers($chatId,$redis);
+
+        if ($redis->exists("chat:bot:{$chatId}")) {
+            return true;
+        }
+
+
+        if (in_array(MemberController::BOT_ID,$chatMembers)) {
+            $redis->set("chat:bot:{$chatId}",1);
+
+            return true;
+        }
+
+        return false;
+
+    }
+
 
 }

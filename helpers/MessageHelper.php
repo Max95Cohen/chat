@@ -28,6 +28,8 @@ class MessageHelper
     const MESSAGE_NO_WRITE_STATUS = 0;
     const MESSAGE_WRITE_STATUS = 1;
     const MESSAGE_EDITED_STATUS = 2;
+    const MESSAGE_NOT_EDITED_STATUS = 0;
+
     const MESSAGE_DELETED_STATUS = -1;
     const MESSAGE_DELETED_SELF_STATUS = -2;
 

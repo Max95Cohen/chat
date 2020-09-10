@@ -89,10 +89,10 @@ class RedisStrategy implements MessageStrategyInterface
 
                     $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
 
-                    $attachments = json_encode([
+                    $attachments = json_encode([[
                         'stick_id' => $stickerId,
                         'path' => $sticker['path']
-                    ],JSON_UNESCAPED_UNICODE);
+                    ]],JSON_UNESCAPED_UNICODE);
 
                 }
 
@@ -132,6 +132,8 @@ class RedisStrategy implements MessageStrategyInterface
                     'another_user_id' => $messageAnotherUserId,
                     'another_user_avatar' => $messageAnotherUserId ? $this->redis->get("user:avatar:{$messageAnotherUserId}") : null,
                     'another_user_name' => $messageAnotherUserId ? $this->redis->get("user:name:{$messageAnotherUserId}") : null,
+                    'online_users_count' => ChatHelper::getOnlineUsersCount((int) $chatId,$this->redis),
+                    'message_for_type' => MessageHelper::getAttachmentTypeString($message['type'])
                 ];
             }
 

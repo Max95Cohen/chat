@@ -167,7 +167,8 @@ class ChatController
                     'time' => $bannedTime ?? $lastMessageTime,
                     'members' => $chatMembersData ?? null,
                     'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis),
-                    'last_read_message_id' => MessageHelper::getLastReadMessageId($unreadMessageCount,$chatId,$this->redis)
+                    'last_read_message_id' => MessageHelper::getLastReadMessageId($unreadMessageCount,$chatId,$this->redis),
+                    'is_bot' => ChatHelper::checkIsChatBot($chatId,$this->redis),
                 ];
 
 

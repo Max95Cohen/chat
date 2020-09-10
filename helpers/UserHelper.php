@@ -21,7 +21,7 @@ class UserHelper
     public static function getAllSettingsKeys () :array
     {
         return [
-          self::  SETTING_CHAT_MUTE_ALL,
+          self::SETTING_CHAT_MUTE_ALL,
         ];
     }
 

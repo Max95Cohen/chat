@@ -43,6 +43,8 @@ class ForwardHelper
 //            ];
 //            $message->text = $forwardMessage['text'] ?? null;
 //        }
+
+        $edit = $fields['edit'] ?? null;
         return [
             'message_id' => $messageId,
             'user_id' => $fields['user_id'],
@@ -59,7 +61,7 @@ class ForwardHelper
             'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $redis) : null,
             'forward_data' => null,
             'write' => $fields['status'],
-            'edit' => $fields['edit'],
+            'edit' => $edit,
             'chat_name' => ChatHelper::getChatName($fields['chat_id'],$fields['user_id'],$redis),
         ];
     }

@@ -13,8 +13,8 @@ nfv
 
 <script>
 
-    // let socket = new WebSocket('ws://127.0.0.1:9502/');
-    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
+    let socket = new WebSocket('ws://127.0.0.1:9505/');
+    // let socket = new WebSocket('wss://chat.indigo24.xyz:9505');
     let myUserId = 116222;
     let YerbolatUserId = 113629;
 
@@ -93,16 +93,16 @@ nfv
 
         // // let iCount = 10;
         // // for (let i = 0; i < iCount; i++) {
-            socket.send(JSON.stringify({
-                cmd: 'message:create',
-                data: {
-                    user_id: user_id,
-                    userToken: userToken,
-                    chat_id: chat_id,
-                    message_type: 3,
-                    attachments:images,
-                }
-            }));
+        //     socket.send(JSON.stringify({
+        //         cmd: 'message:create',
+        //         data: {
+        //             user_id: user_id,
+        //             userToken: userToken,
+        //             chat_id: chat_id,
+        //             message_type: 3,
+        //             attachments:images,
+        //         }
+        //     }));
             //
         // }
         //
