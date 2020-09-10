@@ -50,6 +50,8 @@ class ReplyMessage implements MessageInterface
         $originalMessageType = $originalMessageType === false ? Manager::table('messages')->where('id',$data['message_id'])->value('type') : $originalMessageType;
 
         $messageData['reply_data'] = Factory::getItem($originalMessageType)->getOriginalDataForReply($data['message_id'],$redis);
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString($messageData['type']) ?? null;
+
 
         return $messageData;
     }

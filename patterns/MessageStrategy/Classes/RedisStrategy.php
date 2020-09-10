@@ -85,14 +85,14 @@ class RedisStrategy implements MessageStrategyInterface
 
                 if ($messageType == MessageHelper::STICKER_MESSAGE_TYPE && $attachments) {
                     $attachments = json_decode($attachments,true);
-                    $stickerId = $attachments['stick_id'];
+                    $stickerId = $attachments[0]['stick_id'];
 
                     $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
 
-                    $attachments = [
+                    $attachments = json_encode([
                         'stick_id' => $stickerId,
                         'path' => $sticker['path']
-                    ];
+                    ],JSON_UNESCAPED_UNICODE);
 
                 }
 

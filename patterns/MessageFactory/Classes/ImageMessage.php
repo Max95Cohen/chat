@@ -133,7 +133,7 @@ class ImageMessage implements MessageInterface, MediaMessageInterface
 
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::IMAGE_MESSAGE_TYPE;
-        $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::IMAGE_MESSAGE_TYPE) ?? null;
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::IMAGE_MESSAGE_TYPE) ?? null;
 
 
         return $messageData;

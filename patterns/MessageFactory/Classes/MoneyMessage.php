@@ -29,7 +29,7 @@ class MoneyMessage implements MessageInterface
         $messageData['another_user_id'] = $anotherUserId;
         $messageData['another_user_name'] = $redis->get("user:name:{$anotherUserId}");
         $messageData['another_user_avatar'] = $redis->get("user:avatar:{$anotherUserId}");
-
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::MONEY_MESSAGE_TYPE) ?? null;
 
         return $messageData;
     }

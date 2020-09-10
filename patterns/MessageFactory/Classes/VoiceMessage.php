@@ -80,7 +80,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
-        $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE) ?? null;
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE) ?? null;
 
         return $messageData;
     }

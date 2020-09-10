@@ -97,8 +97,7 @@ class VideoMessage
         $messageData['text'] = $redis->hGet($messageRedisKey,'text');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VIDEO_MESSAGE_TYPE;
-        $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VIDEO_MESSAGE_TYPE) ?? null;
-
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VIDEO_MESSAGE_TYPE) ?? null;
         return $messageData;
     }
 

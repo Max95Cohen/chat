@@ -70,6 +70,20 @@ class MysqlStrategy
             $messageClass = Factory::getItem($messageType);
             $edit = $message->edit ?? 0;
 
+
+            if ($messageType == MessageHelper::STICKER_MESSAGE_TYPE && $attachments) {
+                $attachments = json_decode($attachments,true);
+                $stickerId = $attachments[0]['stick_id'];
+
+                $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
+
+                $attachments = json_encode([
+                    'stick_id' => $stickerId,
+                    'path' => $sticker['path']
+                ],JSON_UNESCAPED_UNICODE);
+
+            }
+
             $messagesForDivider[] = [
                 'id' => strval($message->redis_id),
                 'user_id' => $message->user_id,

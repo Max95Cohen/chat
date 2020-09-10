@@ -93,17 +93,17 @@ nfv
 
         // // let iCount = 10;
         // // for (let i = 0; i < iCount; i++) {
-        //     socket.send(JSON.stringify({
-        //         cmd: 'message:create',
-        //         data: {
-        //             user_id: user_id,
-        //             userToken: userToken,
-        //             chat_id: chat_id,
-        //             message_type: 14,
-        //             attachments:{"stick_id":12},
-        //         }
-        //     }));
-        //     //
+            socket.send(JSON.stringify({
+                cmd: 'message:create',
+                data: {
+                    user_id: user_id,
+                    userToken: userToken,
+                    chat_id: chat_id,
+                    message_type: 3,
+                    attachments:images,
+                }
+            }));
+            //
         // }
         //
         // let RequestChatCount = Math.ceil(iCount / 20);

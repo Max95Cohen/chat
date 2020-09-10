@@ -83,6 +83,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         $messageData['type'] = MessageHelper::DOCUMENT_MESSAGE_TYPE;
         $messageData['extension'] = $redis->hGet($messageRedisKey,'extension');
         $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::DOCUMENT_MESSAGE_TYPE) ?? null;
+
         return $messageData;
     }
 

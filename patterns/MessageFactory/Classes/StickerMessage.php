@@ -38,7 +38,9 @@ class StickerMessage implements MessageInterface
         $attachments = $redis->hGet($messageRedisKey, 'attachments');
 
         $stickerData = json_decode($attachments, true);
-        $stickerId = $stickerData['stick_id'];
+
+
+        $stickerId = $stickerData[0]['stick_id'];
 
 
         $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
@@ -52,7 +54,7 @@ class StickerMessage implements MessageInterface
 
         $messageData['attachment_url'] = StickerController::STICKER_URL;
         $messageData['type'] = MessageHelper::STICKER_MESSAGE_TYPE;
-        $messageData['message_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::STICKER_MESSAGE_TYPE) ?? null;
+        $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::STICKER_MESSAGE_TYPE) ?? null;
 
         return $messageData;
     }
