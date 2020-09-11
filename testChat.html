@@ -13,14 +13,14 @@ nfv
 
 <script>
 
-    let socket = new WebSocket('ws://127.0.0.1:9505/');
+    let socket = new WebSocket('ws://127.0.0.1:9502/');
     // let socket = new WebSocket('wss://chat.indigo24.xyz:9505');
     let myUserId = 116222;
     let YerbolatUserId = 113629;
 
     let chatList = false;
-    var user_id = 116222;
-    var chat_id = 5;
+    var user_id = 1;
+    var chat_id = 18503;
     var userToken = '14a4026d2038ff66f041d172ee33891e82b55425';
     var message_id = "message:30220:40";
 
@@ -89,6 +89,17 @@ nfv
         //         check_user_id:40,
         //     }
         // }));
+
+        socket.send(JSON.stringify({
+            cmd: 'chat:pinned',
+            data: {
+                user_id: user_id,
+                userToken: userToken,
+                // validation: true,
+                chat_id:chat_id
+            }
+        }));
+
 
 
         // // let iCount = 10;

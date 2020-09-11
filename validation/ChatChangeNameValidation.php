@@ -29,5 +29,7 @@ class ChatChangeNameValidation implements BaseValidationInterface
         $v->rule("required",'userToken');
 
         $v->validate();
+
+        return $v->errors();
     }
 }

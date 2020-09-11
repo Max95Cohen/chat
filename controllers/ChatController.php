@@ -108,7 +108,6 @@ class ChatController
                 $chatStartTime = $this->redis->zRange("chat:{$chatId}", 0, 0, true);
                 $chatStartTime = $chatStartTime == false ? "" : (int)array_shift($chatStartTime);
 
-
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
                 $messageForType =  MessageHelper::getAttachmentTypeString($type) ?? null;
                 $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
@@ -209,6 +208,8 @@ class ChatController
     {
         $chatId = $data['chat_id'];
         $userId = $data['user_id'];
+        $pinned = $data['pinned'] ?? ChatHelper::CHAT_PINNED;
+
 
         // проверяем количество уже закрепленных чатов
         $pinnedCount = $this->redis->get("user:pinned:count:{$userId}");
@@ -221,18 +222,22 @@ class ChatController
             ]);
         }
 
-
         // ставит 1 если юзер закрепил чат если чат не закреплен просто удаляется ключ из redis
-        $this->redis->set("chat:pinned:{$userId}:$chatId", 1);
-        $this->redis->incrBy("user:pinned:count:{$userId}");
 
+        if ($pinned) {
+            $this->redis->set("chat:pinned:{$userId}:$chatId", 1);
+            $this->redis->zAdd("user:chats:{$userId}",['XX'],99999999999,$chatId);
+            $this->redis->incrBy("user:pinned:count:{$userId}",1);
+        } else {
+            $this->redis->del("chat:pinned:{$userId}:$chatId");
+            $this->redis->zAdd("user:chats:{$userId}",['XX'],time(),$chatId);
+            $this->redis->decrBy("user:pinned:count:{$userId}",1);
+        }
 
         return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
             'user_id' => $userId,
             'chat_id' => $chatId,
-            'message' => 'чат успешно закреплен',
             'status' => 'true',
-            'pinned_count' => $pinnedCount
         ]);
     }
 

@@ -24,7 +24,7 @@ class ForwardMessage implements MessageInterface
      */
     public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
-        $text = $data['text'];
+        $text = $data['text'] ?? null;
 
         if ($text) {
             $redis->hSet($redisKey, 'text', $text);

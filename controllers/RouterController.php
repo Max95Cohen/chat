@@ -18,7 +18,7 @@ class RouterController
         'init' => [
             'action' => 'AuthController@init',
             'params' => true,
-            'middleware' => [CheckUserTokenMiddleware::class],
+//            'middleware' => [CheckUserTokenMiddleware::class],
         ],
 
         'user:check' => [
@@ -163,6 +163,12 @@ class RouterController
             'params' => true,
         ],
 
+        'chat:pinned' => [
+            'action' => 'ChatController@pinned',
+            'params' => true,
+            'middleware' => [CheckUserTokenMiddleware::class],
+        ],
+
         'user:settings:get' => [
             'action' => 'SettingsController@getSettings',
             'params' => true,
@@ -199,9 +205,14 @@ class RouterController
         'check:user:id' => [
             'action' => 'UserController@checkUserById',
             'params' => true,
-            'middleware' => [ValidationMiddleware::class,CheckUserTokenMiddleware::class],
+            'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
 
+        'chat:pinned' =>[
+            'action' => 'ChatController@pinned',
+            'params' => true,
+//            'middleware' => [CheckUserTokenMiddleware::class]
+        ],
 
         //test
         'test:ping' => [

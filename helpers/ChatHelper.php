@@ -19,6 +19,9 @@ class ChatHelper
     const LINKS_TYPE_FOR_MESSAGE_LIST = 'links';
     const GROUP_AVATAR_URL = 'https://indigo24.com/media/images/';
 
+    const CHAT_PINNED = 1;
+    const CHAT_UN_PINNED = 0;
+
 
     /**
      * @param int $chatId
