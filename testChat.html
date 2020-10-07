@@ -1,24 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-
-nfv
-</body>
-</html>
-
-
 <script>
+    // let socket = new WebSocket('ws://127.0.0.1:9502/');
+    let socket = new WebSocket('wss://chat.indigo24.xyz:9502');
 
-    let socket = new WebSocket('ws://127.0.0.1:9502/');
-    // let socket = new WebSocket('wss://chat.indigo24.xyz:9505');
-    let myUserId = 116222;
-    let YerbolatUserId = 113629;
+    socket.addEventListener('message', function (event) {
+        console.log('MESSAGE');
+        console.log(event.data);
+    });
 
-    let chatList = false;
+    // let myUserId = 116222;
+    // let YerbolatUserId = 113629;
+
+    // let chatList = false;
     var user_id = 1;
     var chat_id = 18503;
     var userToken = '14a4026d2038ff66f041d172ee33891e82b55425';
@@ -26,15 +18,13 @@ nfv
 
     //908102
     socket.addEventListener('open', function (event) {
-
         socket.send(JSON.stringify({
             cmd: 'init',
             data: {
                 user_id: user_id,
                 userToken: userToken,
-                validation:true,
+                validation: true,
             }
-
         }));
 
         // socket.send(JSON.stringify({
@@ -74,10 +64,9 @@ nfv
         // }));
         //
 
-        var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
-        var messIds = [];
-        var stickerId = [{"stick_id":12}]
-
+        // var images = [{filename: "CjzcZxeEqFKLYAN3wkMt8CTSs0Md6oe.mp3"}];
+        // var messIds = [];
+        // var stickerId = [{"stick_id": 12}]
 
 
         // socket.send(JSON.stringify({
@@ -90,16 +79,15 @@ nfv
         //     }
         // }));
 
-        socket.send(JSON.stringify({
-            cmd: 'chat:pinned',
-            data: {
-                user_id: user_id,
-                userToken: userToken,
-                // validation: true,
-                chat_id:chat_id
-            }
-        }));
-
+        // socket.send(JSON.stringify({
+        //     cmd: 'chat:pinned',
+        //     data: {
+        //         user_id: user_id,
+        //         userToken: userToken,
+        //         // validation: true,
+        //         chat_id: chat_id
+        //     }
+        // }));
 
 
         // // let iCount = 10;
@@ -114,7 +102,7 @@ nfv
         //             attachments:images,
         //         }
         //     }));
-            //
+        //
         // }
         //
         // let RequestChatCount = Math.ceil(iCount / 20);
@@ -436,18 +424,5 @@ nfv
         //     }
         //
         // }));
-
-
-
-
     });
-
-    socket.addEventListener('message', function (event) {
-        console.log(123123);
-        console.log(event.data);
-
-
-    })
-
-
 </script>
