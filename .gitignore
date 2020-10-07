@@ -1,4 +1,4 @@
-vendor
+vendor/
 config
 http-server.php
 addStickers
