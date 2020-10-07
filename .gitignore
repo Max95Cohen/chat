@@ -1,6 +1,4 @@
+.idea/
 vendor/
-config
 http-server.php
 addStickers
-
-.idea
