@@ -6,7 +6,7 @@ use Helpers\ConfigHelper;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$server = new swoole_websocket_server("127.0.0.1", 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
+$server = new swoole_websocket_server('0.0.0.0', 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 const MEDIA_URL = 'https://media.chat.indigo24.com/media/';
@@ -25,19 +25,16 @@ $capsule->addConnection([
 ]);
 
 $server->set([
-    'ssl_cert_file' => "/etc/letsencrypt/live/chat.indigo24.com/fullchain.pem",
-    'ssl_key_file' => "/etc/letsencrypt/live/chat.indigo24.com/privkey.pem"
+    'ssl_cert_file' => '/etc/letsencrypt/live/chat.indigo24.xyz/fullchain.pem',
+    'ssl_key_file' => '/etc/letsencrypt/live/chat.indigo24.xyz/privkey.pem'
 ]);
 
 $capsule->setAsGlobal();
 
-
 Carbon::setLocale('ru');
 
 $server->on('open', function ($server, $req) {
-
     return $req->fd;
-
 });
 
 $server->on('message', function ($server, $frame) {
@@ -45,8 +42,6 @@ $server->on('message', function ($server, $frame) {
     $redis->connect('127.0.0.1', 6379);
 
     $requestData = (json_decode($frame->data, true));
-
-//    dump($requestData);
 
     $requestData['data']['server'] = $server;
 
@@ -72,8 +67,6 @@ $server->on('message', function ($server, $frame) {
 
         }
     }
-
-
 });
 
 
@@ -84,14 +77,11 @@ $server->on('close', function ($server, $fd) {
 
     $getUserId = $redis->zRangeByScore('users:connections', $fd, $fd);
     $userId = array_shift($getUserId);
-    //dump($fd,$userId);
+
     $redis->zRemRangeByScore('users:connections', $fd, $fd);
     $redis->set("user:last:visit:{$userId}", time());
 
-
     $redis->close();
-
 });
-
 
 $server->start();
