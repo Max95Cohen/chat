@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Controllers\MessageController;
 use Helpers\ChatHelper;
 use Helpers\ForwardHelper;
+use Helpers\Helper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
@@ -29,6 +30,8 @@ class RedisStrategy implements MessageStrategyInterface
         $endChat = $startChat + $count;
 
         $chatMessagesId = $this->redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
+
+        Helper::log($chatMessagesId); # TODO remove;
 
         $messagesForDivider = [];
         foreach ($chatMessagesId as $chatMessageId) {
@@ -160,7 +163,6 @@ class RedisStrategy implements MessageStrategyInterface
 //
 //        }
         $this->redis->close();
-//        dump(collect($messagesForDivider)->sortByDesc('time')->toArray());
         return $messagesForDivider;
 
     }

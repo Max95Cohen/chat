@@ -5,12 +5,10 @@ namespace Helpers;
 
 use Controllers\ChatController;
 use Illuminate\Database\Capsule\Manager;
-use Patterns\MessageFactory\Factory;
 use Redis;
 
 class MessageHelper
 {
-
     const TEXT_MESSAGE_TYPE = 0;
     const IMAGE_MESSAGE_TYPE = 1;
     const DOCUMENT_MESSAGE_TYPE = 2;
@@ -35,8 +33,8 @@ class MessageHelper
 
     const MESSAGE_COUNT_IN_REDIS = 40;
 
-    const AVATAR_URL = INDIGO_URL.'uploads/avatars/';
-    const GROUP_AVATAR_URL ='https://media.chat.indigo24.xyz/media/group/';
+    const AVATAR_URL = INDIGO_URL . 'uploads/avatars/';
+    const GROUP_AVATAR_URL = 'https://media.chat.indigo24.xyz/media/group/';
 
     public static function getMessageIncorrectFormat($allMessages, Redis $redis)
     {
@@ -143,7 +141,7 @@ class MessageHelper
         return [
             'status' => 'true',
             'write' => self::MESSAGE_NO_WRITE_STATUS,
-            'mute' =>$redis->zRangeByScore("u:mute:ch:{$data['user_id']}",$data['chat_id'],$data['chat_id']) == [] ? ChatController::CHAT_UNMUTE : ChatController::CHAT_MUTE,
+            'mute' => $redis->zRangeByScore("u:mute:ch:{$data['user_id']}", $data['chat_id'], $data['chat_id']) == [] ? ChatController::CHAT_UNMUTE : ChatController::CHAT_MUTE,
             'chat_id' => $data['chat_id'],
             'message_id' => $messageRedisKey,
             'user_id' => $data['user_id'],
@@ -151,8 +149,8 @@ class MessageHelper
             'avatar' => $redis->get("user:avatar:{$data['user_id']}"),
             'avatar_url' => self::AVATAR_URL,
             'user_name' => $redis->get("user:name:{$data['user_id']}"),
-            'chat_name' => ChatHelper::getChatName($data['chat_id'],$data['user_id'],$redis),
-            'chat_type' => ChatHelper::getChatType($chatId,$redis)
+            'chat_name' => ChatHelper::getChatName($data['chat_id'], $data['user_id'], $redis),
+            'chat_type' => ChatHelper::getChatType($chatId, $redis)
         ];
     }
 
@@ -191,7 +189,7 @@ class MessageHelper
 
         if ($checkExistInRedis) {
             $redis->hMSet($data['message_id'], ['text' => $data['text']]);
-            $redis->hSet($data['message_id'],'edit',1);
+            $redis->hSet($data['message_id'], 'edit', 1);
         }
 
     }
@@ -216,14 +214,14 @@ class MessageHelper
     public static function deleteMessageInRedis(array $data, Redis $redis): void
     {
         $redis->hMSet($data['message_id'], ['status' => self::MESSAGE_DELETED_STATUS]);
-        $redis->set("all:deleted:{$data['message_id']}",1);
-        $redis->zRem("chat:{$data['chat_id']}",$data['message_id']);
+        $redis->set("all:deleted:{$data['message_id']}", 1);
+        $redis->zRem("chat:{$data['chat_id']}", $data['message_id']);
     }
 
     /**
      * @param array $data
      */
-    public static function updateMessageStatusInMysql(array $data,$status) :void
+    public static function updateMessageStatusInMysql(array $data, $status): void
     {
         $sql = Manager::table('messages');
         $messageId = intval($data['message_id']);
@@ -236,8 +234,8 @@ class MessageHelper
         }
 
         $sql->update([
-                'status' => $status,
-            ]);
+            'status' => $status,
+        ]);
 
     }
 
@@ -245,15 +243,15 @@ class MessageHelper
      * @param $messageId
      * @return bool
      */
-    public static function checkMessageExistInMysql($messageId) :bool
+    public static function checkMessageExistInMysql($messageId): bool
     {
         return Manager::table('messages')
-            ->where('redis_id',$messageId)
-            ->orWhere('id',$messageId)
+            ->where('redis_id', $messageId)
+            ->orWhere('id', $messageId)
             ->exists();
     }
 
-    public static function getOriginalMessageDataForReply($messageId, Redis $redis) :array
+    public static function getOriginalMessageDataForReply($messageId, Redis $redis): array
     {
         $checkMessageInRedis = $redis->exists($messageId);
 
@@ -267,7 +265,7 @@ class MessageHelper
     }
 
 
-    public static function getChatIdByUsersId( int $userId, int $anotherUserId,Redis $redis)
+    public static function getChatIdByUsersId(int $userId, int $anotherUserId, Redis $redis)
     {
         $chatId = $redis->get("private:{$userId}:{$anotherUserId}");
         return $chatId === false ? $redis->get("private:{$anotherUserId}:{$userId}") : $chatId;
@@ -277,7 +275,7 @@ class MessageHelper
     /**
      * @return int[]
      */
-    public static function getMessageTypes() :array
+    public static function getMessageTypes(): array
     {
         return [
             self::TEXT_MESSAGE_TYPE,
@@ -303,7 +301,7 @@ class MessageHelper
      */
     public static function getMessageText(string $messageId, Redis $redis)
     {
-        $text = $redis->hGet($messageId,'text');
+        $text = $redis->hGet($messageId, 'text');
         return $text === false ? "" : $text;
     }
 
@@ -316,29 +314,28 @@ class MessageHelper
     public static function getLastReadMessageId(int $unReadCount, int $chatId, Redis $redis)
     {
         if ($unReadCount <= self::MESSAGE_COUNT_IN_REDIS) {
-            $message = $redis->zRange("chat:{$chatId}",$unReadCount,$unReadCount);
+            $message = $redis->zRange("chat:{$chatId}", $unReadCount, $unReadCount);
 
             if ($message) {
                 return $message[0];
             }
-
         }
 
         if ($unReadCount > self::MESSAGE_COUNT_IN_REDIS) {
             $message = Manager::table("messages")
-                ->where('chat_id',$chatId)
-                ->skip($unReadCount-1)
+                ->where('chat_id', $chatId)
+                ->skip($unReadCount - 1)
                 ->first();
 
             return $message->redis_id;
         }
 
-        $message = $redis->zRange("chat:{$chatId}",-1,-1);
-        return $message[0];
+        $message = $redis->zRange("chat:{$chatId}", -1, -1);
 
+        if (isset($message[0])) {
+            return $message[0];
+        }
+
+        return 0;
     }
-
-
-
-
 }

@@ -5,6 +5,7 @@ namespace Controllers;
 
 
 use Carbon\Carbon;
+use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\PhoneHelper;
 use Helpers\ResponseFormatHelper;
@@ -26,7 +27,7 @@ class UserController
         $phone = PhoneHelper::replaceForSeven($phone);
 
         $checkExist = $this->redis->get("user:phone:{$phone}");
-        dump($checkExist);
+
         if ($checkExist) {
             $userId = (int)$checkExist;
             $avatar = $this->redis->get("user:avatar:{$userId}");
@@ -47,13 +48,18 @@ class UserController
                 'chat_id' => $chatId,
                 'online' => $online
             ]);
+        } else {
+            $user = DB::table('customers')->where('phone', $phone)->get(['id', 'name', 'avatar', 'phone']);
+
+            Helper::log($user, 'NOT FOUND');
         }
+
         $this->redis->close();
+
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             'status' => 'false',
             'phone' => $data['phone']
         ]);
-
     }
 
     /**
@@ -62,7 +68,6 @@ class UserController
      */
     public function writing(array $data)
     {
-
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
 
@@ -79,15 +84,14 @@ class UserController
                     'user_id' => $member,
                     'typing' => 1
                 ];
-
             }
-
         }
+
         $notifyUsers = array_diff($chatMembers, [$data['user_id']]);
 
         $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $tapingMembers);
 
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $tapingMembers);
     }
 
     public function checkOnline(array $data)
@@ -105,10 +109,10 @@ class UserController
                 'online' => $online
             ];
         }
+
         $this->redis->close();
+
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
-
-
     }
 
     /**
@@ -116,7 +120,7 @@ class UserController
      * @param Redis $redis
      * @return array
      */
-    public function checkUserById(array $data) :array
+    public function checkUserById(array $data): array
     {
         $checkUserId = $data['check_user_id'] ?? null;
 
@@ -133,8 +137,5 @@ class UserController
             'chat_id' => $chatId,
             'online' => UserHelper::checkOnline($checkUserId, $this->redis)
         ]);
-
     }
-
-
 }

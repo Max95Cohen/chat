@@ -14,7 +14,8 @@
         "gumlet/php-image-resize": "^1.9",
         "kreait/firebase-php": "^5.4",
         "vlucas/valitron": "^1.4",
-        "ext-curl": "*"
+        "ext-curl": "*",
+      "ext-json": "*"
     },
     "autoload": {
         "psr-4": {

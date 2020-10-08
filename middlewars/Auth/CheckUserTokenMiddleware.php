@@ -1,6 +1,7 @@
 <?php
 
 namespace Middlewars\Auth;
+
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Middlewars\Interfaces\BaseMiddlewareInterface;
@@ -16,19 +17,22 @@ class CheckUserTokenMiddleware implements BaseMiddlewareInterface
     public function __construct()
     {
         $this->redis = new Redis();
-        $this->redis->connect('127.0.0.1',6379);
+        $this->redis->connect('127.0.0.1', 6379);
     }
 
     public function handle(array $data)
     {
-        if (UserHelper::CheckUserToken($data['userToken'],$data['user_id'],$this->redis) == false) {
+        if (UserHelper::CheckUserToken($data['userToken'], $data['user_id'], $this->redis) == false) {
             $this->redis->close();
-            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ["success" => false, "message" => 'нужно авторизоваться токен устарел', 'logout'  => true]);
+            return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
+                'success' => 'false',
+                'message' => 'нужно авторизоваться токен устарел',
+                'logout' => 'true',
+            ]);
         }
 
         $this->setNext(true);
         $this->redis->close();
-
     }
 
     /**

@@ -10,7 +10,6 @@ require __DIR__ . '/vendor/autoload.php';
 //$usersPhones = $redis->zRange("users:phones",0,100,true);
 //
 //foreach ($usersPhones as $id => $phone) {
-//    dump($id);
 ////    $redis->zAdd("chat:members:17",['NX'],\Controllers\ChatController::SUBSCRIBER,$id);
 //    $redis->zRemRangeByScore('chat:members:17',1,3);
 //}

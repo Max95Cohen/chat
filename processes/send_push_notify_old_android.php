@@ -55,7 +55,6 @@ while (true) {
 
                     foreach ($chatMembers as $k => $chatMember) {
                         $messUserId = $message['user_id'];
-                        dump($messUserId,$chatMember);
                         $checkMute = $redis->get("u:mute:ch:{$chatMember}",$chat->id);
                         $checkOnline = $redis->exists("Customer:{$chatMember}");
                         if ($messUserId == $chatMember || $checkMute || !$checkOnline) {

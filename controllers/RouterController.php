@@ -2,6 +2,7 @@
 
 namespace Controllers;
 
+use Helpers\Helper;
 use Helpers\ResponseFormatHelper;
 use Middlewars\Auth\CheckUserTokenMiddleware;
 use Middlewars\Exists\CheckChatExistMiddleware;
@@ -13,14 +14,12 @@ use Middlewars\Validation\ValidationMiddleware;
 
 class RouterController
 {
-
     public static $routes = [
         'init' => [
             'action' => 'AuthController@init',
             'params' => true,
 //            'middleware' => [CheckUserTokenMiddleware::class],
         ],
-
         'user:check' => [
             'action' => 'UserController@checkExist',
             'params' => true,
@@ -77,18 +76,23 @@ class RouterController
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
 
-
         //messageController
         'message:create' => [
             'action' => 'MessageController@create',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
-        'message:write' => [
+        'message:write' => [ # TODO remove in new version. Incorrect typing.
             'action' => 'MessageController@write',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
+        'message:read' => [
+            'action' => 'MessageController@read',
+            'params' => true,
+            'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
+        ],
+
         'message:edit' => [
             'action' => 'MessageController@edit',
             'params' => true,
@@ -112,14 +116,12 @@ class RouterController
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class]
         ],
 
-
         // memberController
-
-        'chat:members' => [
+        /*'chat:members' => [
             'action' => 'MemberController@getChatMembers',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
-        ],
+        ],*/
         'chat:members:privileges' => [
             'action' => 'MemberController@changeUserPrivileges',
             'params' => true,
@@ -135,7 +137,6 @@ class RouterController
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckPrivilegesForAddGroupChat::class]
         ],
-
         'chat:members:check' => [
             'action' => 'MemberController@checkExists',
             'params' => true,
@@ -150,37 +151,30 @@ class RouterController
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckChatExistMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
-
         'chat:message:by:type' => [
             'action' => 'MessageController@getChatMessageByType',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckChatExistMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
-
-
         'chat:stickers' => [
             'action' => 'StickerController@getAll',
             'params' => true,
         ],
-
         'chat:pinned' => [
             'action' => 'ChatController@pinned',
             'params' => true,
             'middleware' => [CheckUserTokenMiddleware::class],
         ],
-
         'user:settings:get' => [
             'action' => 'SettingsController@getSettings',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
-
         'user:settings:set' => [
             'action' => 'SettingsController@setSettings',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
-
         'set:group:avatar' => [
             'action' => 'ChatController@setChatAvatar',
             'params' => true,
@@ -188,40 +182,32 @@ class RouterController
         ],
 
         //ContactController
-
-
         'contact:save' => [
             'action' => 'ContactController@save',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
-
         'contact:get' => [
             'action' => 'ContactController@get',
             'params' => true,
             'middleware' => [CheckUserTokenMiddleware::class],
         ],
-
         'check:user:id' => [
             'action' => 'UserController@checkUserById',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
         ],
-
-        'chat:pinned' =>[
+        /*'chat:pinned' => [
             'action' => 'ChatController@pinned',
             'params' => true,
 //            'middleware' => [CheckUserTokenMiddleware::class]
-        ],
+        ],*/
 
         //test
         'test:ping' => [
             'action' => 'RouterController@ping'
         ],
-
-
     ];
-
 
     public static function executeRoute($route, array $params = null, $fd = null, $server = null)
     {
@@ -229,37 +215,41 @@ class RouterController
 
         $route = self::$routes[$route] ?? null;
 
-
         if ($fd) {
             $params['connection_id'] = $fd;
         }
+
         if ($server) {
             $params['server'] = $server;
         }
 
-
         $params['cmd'] = $route;
         $params['cmd_name'] = $cmdName;
+
+        echo "PARAMS\n"; # TODO remove;
+        Helper::log($params);
 
         if ($route) {
             $controllerAndMethod = explode('@', $route['action']);
             $controller = 'Controllers\\' . $controllerAndMethod[0];
             $method = $controllerAndMethod[1];
-            $middlewars = $route['middleware'] ?? null;
-            if (is_array($middlewars)) {
-                foreach ($middlewars as $middlewar) {
-                    $middlewareNamespace = $middlewar;
+            $middlewares = $route['middleware'] ?? null;
+
+            if (is_array($middlewares)) {
+                foreach ($middlewares as $middleware) {
+                    $middlewareNamespace = $middleware;
                     $middlewareClass = new $middlewareNamespace;
                     $middlewareResponse = $middlewareClass->handle($params);
+
                     if ($middlewareClass->isNext() !== false) {
                         continue;
                     }
+
                     return $middlewareResponse;
                 }
             }
 
             return $params ? (new $controller)->$method($params) : (new $controller)->$method();
-
         }
 
         return '404';
@@ -268,8 +258,5 @@ class RouterController
     public function ping($data)
     {
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], ['ping']);
-
     }
-
-
 }

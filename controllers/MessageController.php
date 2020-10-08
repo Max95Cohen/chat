@@ -139,7 +139,32 @@ class MessageController
         if ($messageOwner != $data['user_id']) {
             $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
             $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
-            dump($this->redis->get($data['message_id']));
+            ChatHelper::nullifyUnWriteCount($chatId, $data['user_id'], $this->redis);
+
+            $this->redis->close();
+
+            return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+                'owner_id' => $messageOwner,
+                'write' => strval(MessageController::WRITE),
+                'status' => true,
+            ]);
+        }
+
+    }
+
+    public function read(array $data)
+    {
+        $messageId = $data['message_id'];
+        $chatId = $data['chat_id'];
+        $notifyUsers = $this->redis->zRange("chat:members:{$chatId}", 0, -1);
+
+        $messageOwner = $this->redis->hGet($data['message_id'], 'user_id');
+
+        if ($messageOwner != $data['user_id']) {
+            $this->redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_WRITE_STATUS]);
+            $this->redis->zAdd("chat:{$chatId}", ['CH'], MessageController::WRITE, "message:$messageOwner:$messageId");
             ChatHelper::nullifyUnWriteCount($chatId, $data['user_id'], $this->redis);
 
             $this->redis->close();

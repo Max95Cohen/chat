@@ -31,7 +31,7 @@ $fireBaseUrl = 'https://fcm.googleapis.com/fcm/send';
 while (true) {
     $redis = new Redis();
 
-    $redis->pconnect('127.0.0.1',6379);
+    $redis->pconnect('127.0.0.1', 6379);
     $allNotify = $redis->zRange("all:notify:queue", 0, -1);
 
     foreach ($allNotify as $notify) {
@@ -58,9 +58,8 @@ while (true) {
 
                     foreach ($chatMembers as $k => $chatMember) {
                         $messUserId = $message['user_id'];
-                        dump($messUserId,$chatMember);
 
-                        $checkChatMute = ChatHelper::checkChatMute($chatMember,$chat->id,$redis);
+                        $checkChatMute = ChatHelper::checkChatMute($chatMember, $chat->id, $redis);
 
                         if ($messUserId == $chatMember || $checkChatMute == ChatController::CHAT_MUTE) {
                             continue;
@@ -72,7 +71,7 @@ while (true) {
                             'collapse_key' => 'type_a',
                             'data' => [
                                 'user_name' => $userName,
-                                'chat_name' =>$chatName,
+                                'chat_name' => $chatName,
                                 'chat_id' => $message['chat_id'],
                                 'type' => $message['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE,
                                 'avatar' => $redis->get("user:avatar"),

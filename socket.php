@@ -1,16 +1,19 @@
 <?php
 
+require __DIR__ . '/vendor/autoload.php';
+
 use Carbon\Carbon;
 use Controllers\RouterController;
 use Helpers\ConfigHelper;
-
-require __DIR__ . '/vendor/autoload.php';
+use Helpers\Helper;
 
 $server = new swoole_websocket_server('0.0.0.0', 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
 
 $capsule = new Illuminate\Database\Capsule\Manager();
-const MEDIA_URL = 'https://media.chat.indigo24.com/media/';
-const INDIGO_URL = 'https://indigo24.com/';
+
+const MEDIA_URL = 'https://media.chat.indigo24.xyz/media/';
+const INDIGO_URL = 'https://indigo24.xyz/';
+
 $config = ConfigHelper::getDbConfig('chat_db');
 
 $capsule->addConnection([
@@ -25,8 +28,8 @@ $capsule->addConnection([
 ]);
 
 $server->set([
-    'ssl_cert_file' => '/etc/letsencrypt/live/chat.indigo24.xyz/fullchain.pem',
-    'ssl_key_file' => '/etc/letsencrypt/live/chat.indigo24.xyz/privkey.pem'
+    'ssl_cert_file' => '/etc/letsencrypt/live/indigo24.xyz/fullchain.pem',
+    'ssl_key_file' => '/etc/letsencrypt/live/indigo24.xyz/privkey.pem'
 ]);
 
 $capsule->setAsGlobal();
@@ -34,18 +37,24 @@ $capsule->setAsGlobal();
 Carbon::setLocale('ru');
 
 $server->on('open', function ($server, $req) {
+    echo "OPEN\n";
+
     return $req->fd;
 });
 
 $server->on('message', function ($server, $frame) {
+    echo "MESSAGE\n";
+
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);
 
-    $requestData = (json_decode($frame->data, true));
+    $requestData = json_decode($frame->data, true);
 
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
+
+    Helper::log($responseData); # TODO remove;
 
     $notifyUsers = $responseData['notify_users'];
     $response = [];
@@ -59,19 +68,21 @@ $server->on('message', function ($server, $frame) {
         $server->push($frame->fd, json_encode($response, JSON_UNESCAPED_UNICODE));
     } else {
         foreach ($notifyUsers as $notifyUser) {
-            $connectionId = intval($redis->get("con:$notifyUser"));
+            $connectionId = intval($redis->get("con:{$notifyUser}"));
             $checkConnection = $redis->zRangeByScore('users:connections', $connectionId, $connectionId);
+
             if ($checkConnection) {
                 $server->push($connectionId, json_encode($response, JSON_UNESCAPED_UNICODE));
             }
-
         }
     }
 });
 
-
 $server->on('close', function ($server, $fd) {
-    echo "connection close: {$fd}\n";
+    echo "CLOSE\n";
+
+    Helper::log("connection close: {$fd}");
+
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);
 

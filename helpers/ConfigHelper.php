@@ -1,14 +1,9 @@
 <?php
 
-
 namespace Helpers;
-
-
 
 class ConfigHelper
 {
-
-
     /**
      * @param string
      * @return mixed
@@ -20,6 +15,4 @@ class ConfigHelper
 
         return $config[$dbConfName];
     }
-
-
 }

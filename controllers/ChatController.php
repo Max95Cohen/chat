@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Carbon\Carbon;
 use Helpers\ChatHelper;
+use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
@@ -14,6 +15,7 @@ use Patterns\MessageStrategy\Classes\BannedStrategy;
 use Patterns\MessageStrategy\Classes\MysqlStrategy;
 use Patterns\MessageStrategy\Classes\RedisStrategy;
 use Patterns\MessageStrategy\Strategy;
+use PHPUnit\TextUI\Help;
 use Redis;
 use Traits\RedisTrait;
 
@@ -64,7 +66,7 @@ class ChatController
      * @return array[]
      */
     public function create(array $data)
-    {  
+    {
 
         $data = Factory::getItem($data['type'])->create($data, $this->redis);
 
@@ -81,6 +83,7 @@ class ChatController
      */
     public function getAll(array $data)
     {
+        echo "GET ALL\n";
 
         $page = $data['page'] ?? 1;
         $onePageChatCount = 20;
@@ -90,26 +93,30 @@ class ChatController
 
         $userChatIds = $this->redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
 
+        Helper::log($userChatIds, 'REDIS'); # TODO remove;
+
         $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
+
+        Helper::log($userChats, 'DB'); # TODO remove;
 
         // нужно для сортировки,
         $responseData = [];
 
         foreach ($userChatIds as $chatId) {
             $chat = $userChats->where('id', $chatId)->first();
-            $lastMessageId = $this->redis->zRange("chat:$chatId", -1, -1);
+            $lastMessageId = $this->redis->zRange("chat:{$chatId}", -1, -1);
+
             //@TODO тестовая фигня нужно проверить и исправить
             $lastMessageId = $lastMessageId[0] ?? null;
             $lastMessage = $lastMessageId ? $this->redis->hGetAll($lastMessageId) : [];
-            $lastMessageUserId = $lastMessage['user_id'] ?? null;
-
+            $lastMessageUserId = $lastMessage['user_id'] ?? 'null';
 
             if ($chat) {
                 $chatStartTime = $this->redis->zRange("chat:{$chatId}", 0, 0, true);
                 $chatStartTime = $chatStartTime == false ? "" : (int)array_shift($chatStartTime);
 
                 $type = $lastMessage['type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
-                $messageForType =  MessageHelper::getAttachmentTypeString($type) ?? null;
+                $messageForType = MessageHelper::getAttachmentTypeString($type) ?? null;
                 $lastMessageOwnerAvatar = $this->redis->get("user:avatar:{$lastMessageUserId}");
 
                 $lastMessageText = $lastMessage['text'] ?? null;
@@ -129,14 +136,28 @@ class ChatController
 
                 $forwardMessageId = $lastMessage['forward_message_id'] ?? null;
 
+                $userName = $this->redis->get("user:name:{$lastMessageUserId}");
 
+                if (!$userName) {
+                    $userName = 'null';
+                }
+
+                $text = $forwardMessageId ? MessageHelper::getMessageText($forwardMessageId,$this->redis) : $lastMessageText;
+
+                if (!$text) {
+                    $text = 'null';
+                }
+
+                if (!$messageForType) {
+                    $messageForType = 'null';
+                }
 
                 $lastMessageData = [
                     'message_id' => $lastMessageId ?? '',
                     'avatar' => $lastMessageOwnerAvatar == false ? UserHelper::DEFAULT_AVATAR : $lastMessageOwnerAvatar,
-                    'user_name' => $this->redis->get("user:name:{$lastMessageUserId}") ?? '',
-                    'text' => $forwardMessageId ? MessageHelper::getMessageText($forwardMessageId,$this->redis) : ($lastMessageText ?? ''),
-                    'time' => $lastMessageTime,
+                    'user_name' => $userName,
+                    'text' => $text,
+                    'time' => intval($lastMessageTime),
                     'type' => $type,
                     'message_for_type' => $messageForType,
                 ];
@@ -153,7 +174,7 @@ class ChatController
 
                 $unreadMessageCount = $lastMessageUserId != $data['user_id'] ? intval($this->redis->get("usr:unw:{$data['user_id']}:{$chatId}")) : 0;
                 $responseData[] = [
-                    'id' => $chatId,
+                    'id' => intval($chatId),
                     'avatar' => ChatHelper::getChatAvatar($chat->type, $chat->id, $data['user_id'], $this->redis),
                     'name' => ChatHelper::getChatName($chat->id, $data['user_id'], $this->redis),
                     'type' => $chat->type,
@@ -161,27 +182,24 @@ class ChatController
                     'unread_messages' => $unreadMessageCount,
                     'avatar_url' => $chat->type == ChatController::GROUP ? MessageHelper::GROUP_AVATAR_URL : MessageHelper::AVATAR_URL,
                     'another_user_id' => $anotherUserId,
-                    'another_user_phone' => $this->redis->get("userId:phone:{$anotherUserId}"),
+                    'another_user_phone' => $this->redis->get("userId:phone:{$anotherUserId}") ?: 'null',
                     'last_message' => $lastMessageData,
-                    'time' => $bannedTime ?? $lastMessageTime,
-                    'members' => $chatMembersData ?? null,
-                    'mute' => ChatHelper::checkChatMute($data['user_id'],$chatId,$this->redis),
-                    'last_read_message_id' => MessageHelper::getLastReadMessageId($unreadMessageCount,$chatId,$this->redis),
-                    'is_bot' => ChatHelper::checkIsChatBot($chatId,$this->redis),
+                    'time' => $bannedTime ?? $lastMessageTime ?: 0,
+                    'members' => $chatMembersData ?? 'null',
+                    'mute' => ChatHelper::checkChatMute($data['user_id'], $chatId, $this->redis),
+                    'last_read_message_id' => MessageHelper::getLastReadMessageId($unreadMessageCount, $chatId, $this->redis),
+                    'is_bot' => ChatHelper::checkIsChatBot($chatId, $this->redis) ?: 'null',
                 ];
-
-
             }
-
         }
-        $this->redis->close();
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
 
+        $this->redis->close();
+
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
     }
 
     public function getOne(array $data)
     {
-
         $data['page'] = $data['page'] ?? 1;
         $data['count'] = $data['count'] ?? 20;
         $chatId = $data['chat_id'];
@@ -192,15 +210,17 @@ class ChatController
         $checkBanned = $chatMembers[$data['user_id']] ?? null;
 
         $data['page'] <= 2 ? $strategy->setStrategy(new RedisStrategy()) : $strategy->setStrategy(new MysqlStrategy());
+
         if ($checkBanned == self::BANNED) {
             $strategy->setStrategy(new BannedStrategy());
         }
 
         $responseData = $strategy->executeStrategy("getMessages", $data);
 
-        ChatHelper::nullifyUnWriteCount($chatId,$data['user_id'],$this->redis);
+        ChatHelper::nullifyUnWriteCount($chatId, $data['user_id'], $this->redis);
 
         $this->redis->close();
+
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $responseData);
     }
 
@@ -226,12 +246,12 @@ class ChatController
 
         if ($pinned) {
             $this->redis->set("chat:pinned:{$userId}:$chatId", 1);
-            $this->redis->zAdd("user:chats:{$userId}",['XX'],99999999999,$chatId);
-            $this->redis->incrBy("user:pinned:count:{$userId}",1);
+            $this->redis->zAdd("user:chats:{$userId}", ['XX'], 99999999999, $chatId);
+            $this->redis->incrBy("user:pinned:count:{$userId}", 1);
         } else {
             $this->redis->del("chat:pinned:{$userId}:$chatId");
-            $this->redis->zAdd("user:chats:{$userId}",['XX'],time(),$chatId);
-            $this->redis->decrBy("user:pinned:count:{$userId}",1);
+            $this->redis->zAdd("user:chats:{$userId}", ['XX'], time(), $chatId);
+            $this->redis->decrBy("user:pinned:count:{$userId}", 1);
         }
 
         return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
@@ -276,39 +296,38 @@ class ChatController
      * @param array $data
      * @return array
      */
-    public function muteChat(array $data) :array
+    public function muteChat(array $data): array
     {
         $userId = $data['user_id'];
         $chatId = $data['chat_id'];
         $mute = $data['mute'] ?? self::CHAT_MUTE;
 
         if ($mute == 'all') {
-            $this->redis->set("u:ch:all:m:{$userId}",true);
+            $this->redis->set("u:ch:all:m:{$userId}", true);
 
-            return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+            return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
                 'mute' => "all",
             ]);
         }
 
         if ($mute == self::CHAT_MUTE) {
-            $this->redis->zAdd("u:mute:ch:{$userId}",['NX'],$chatId,$chatId);
+            $this->redis->zAdd("u:mute:ch:{$userId}", ['NX'], $chatId, $chatId);
 
             $this->redis->close();
 
-            return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+            return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
                 'chat_id' => $chatId,
                 'mute' => self::CHAT_MUTE,
             ]);
 
         }
 
-        $this->redis->zRem("u:mute:ch:{$userId}",$chatId);
+        $this->redis->zRem("u:mute:ch:{$userId}", $chatId);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
             'chat_id' => $chatId,
             'mute' => self::CHAT_UNMUTE,
         ]);
-
 
 
     }
@@ -325,23 +344,21 @@ class ChatController
 
         $this->redis->set("group:avatar{$chatId}");
         Manager::table('chats')
-            ->where('id',$chatId)
-            ->where('type',ChatController::GROUP)
+            ->where('id', $chatId)
+            ->where('type', ChatController::GROUP)
             ->update([
-            'avatar' => $avatar
-        ]);
+                'avatar' => $avatar
+            ]);
 
-        $notifyUsers = ChatHelper::getChatMembers($chatId,$this->redis);
+        $notifyUsers = ChatHelper::getChatMembers($chatId, $this->redis);
 
-        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers,[
+        return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, [
             'avatar' => $avatar,
             'avatar_url' => ChatHelper::GROUP_AVATAR_URL
         ]);
 
 
     }
-
-
 
 
 }

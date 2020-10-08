@@ -77,7 +77,6 @@ function sendPushForAllChatMembers( string $notify, Redis $redis, string $fireBa
 
                 foreach ($chatMembers as $k => $chatMember) {
                     $messUserId = $message['user_id'];
-                    dump($messUserId,$chatMember);
                     $checkMute = $redis->get("u:mute:ch:{$chatMember}");
                     $checkOnline = $redis->exists("Customer:{$chatMember}");
                     if ($messUserId == $chatMember || $checkMute || !$checkOnline) {

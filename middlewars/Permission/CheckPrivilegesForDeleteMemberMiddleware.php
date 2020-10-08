@@ -21,7 +21,6 @@ class CheckPrivilegesForDeleteMemberMiddleware implements BaseMiddlewareInterfac
     {
 
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$data['chat_id']}", 0, "+inf", ['withscores' => true]);
-        dump($chatMembers);
         if ($chatMembers[$data['user_id']] == ChatController::OWNER || $chatMembers[$data['user_id']] == ChatController::ADMIN) {
 
             if ($chatMembers[$data['user_id']] == ChatController::ADMIN && $chatMembers[$data['member_id']] == ChatController::ADMIN) {

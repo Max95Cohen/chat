@@ -47,8 +47,6 @@ class SettingsController
         $responseSettings = [];
 
         foreach ($settingsKeys as $settingKey) {
-            dump($settingKey);
-            dump($savedSettings);
             $responseSettings['settings'][$settingKey] = $savedSettings[$settingKey] ?? 0 ;
         }
 

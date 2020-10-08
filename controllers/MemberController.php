@@ -70,7 +70,6 @@ class MemberController
         $chatId = $data['chat_id'];
         $userId = $data['user_id'];
         $role = $data['role'];
-        dump("work change");
         $membersForChange = explode(',', $data['members']);
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER, ['withscores' => true]);
         $checkAdmin = array_search($userId, $chatMembers);
@@ -196,7 +195,6 @@ class MemberController
 
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER, ['withscores' => true]);
         $userRole = (int)$chatMembers[$userId] ?? 'not allowed';
-        dump($chatMembers);
 
         // @TODO вынести в отдельный middleware
         $checkAdmin = in_array($userRole, ChatController::getRolesForAdministrators());
@@ -346,7 +344,6 @@ class MemberController
 
         $multiResponseData['multi_response'] = true;
         $multiResponseData['members_count'] = $this->redis->zCount("chat:members:{$data['chat_id']}", ChatController::SUBSCRIBER, '+inf');
-        dump($multiResponseData);
         return $multiResponseData;
 
     }
