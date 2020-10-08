@@ -1,9 +1,11 @@
 <?php
+
 require __DIR__ . '/../vendor/autoload.php';
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 
 use Helpers\ConfigHelper;
+use Helpers\PhoneHelper;
 use Illuminate\Database\Capsule\Manager as DB;
 
 $config = ConfigHelper::getDbConfig('mobile_db');
@@ -20,26 +22,22 @@ $capsule->addConnection([
 ]);
 
 $capsule->setAsGlobal();
-while (true) {
-    $allUsers = DB::table('customers')->get(['id', 'name', 'avatar', 'phone']);
-    $redis = new Redis();
 
-    $redis->pconnect('127.0.0.1', 6379);
+$allUsers = DB::table('customers')->get(['id', 'name', 'avatar', 'phone']);
 
-    foreach ($allUsers as $user) {
-        dump($user->id);
-        $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
-        $redis->set("user:avatar:{$user->id}", $user->avatar);
-        $redis->set("user:name:{$user->id}", $user->name);
-        $redis->set("userId:phone:{$user->id}", $user->phone);
-        $redis->set("user:phone:{$phoneInCorrectFormat}", $user->id);
+$redis = new Redis();
 
-//        $redis->del("user:phone:{$user->id}");
+$redis->pconnect('127.0.0.1', 6379);
 
+foreach ($allUsers as $user) {
+    $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
 
-    }
-
-    $redis->close();
-    sleep(1000);
-
+    $redis->set("user:avatar:{$user->id}", $user->avatar);
+    $redis->set("user:name:{$user->id}", $user->name);
+    $redis->set("userId:phone:{$user->id}", $user->phone);
+    $redis->set("user:phone:{$phoneInCorrectFormat}", $user->id);
 }
+
+$redis->close();
+
+echo "Success\n";
