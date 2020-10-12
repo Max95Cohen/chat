@@ -5,11 +5,13 @@ namespace Controllers;
 
 
 use Helpers\ChatHelper;
+use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager;
 use Illuminate\Support\Str;
+use PHPUnit\TextUI\Help;
 use Redis;
 use Traits\RedisTrait;
 
@@ -70,30 +72,43 @@ class MemberController
         $chatId = $data['chat_id'];
         $userId = $data['user_id'];
         $role = $data['role'];
-        $membersForChange = explode(',', $data['members']);
+
+        $membersForChange = $data['members'];
+
         $chatMembers = $this->redis->zRangeByScore("chat:members:{$chatId}", 0, ChatController::OWNER, ['withscores' => true]);
-        $checkAdmin = array_search($userId, $chatMembers);
-        $checkMembersForChange = array_intersect($membersForChange, $chatMembers);
+
+        $checkAdmin = false;
+
+        if (isset($chatMembers[$userId])) {
+            $checkAdmin = $chatMembers[$userId];
+        }
+
         $changeUsers = [];
+
         //@TODO подключить middleware
-        if ($checkAdmin === ChatController::OWNER && in_array($role, ChatController::getRolesForOwner())) {
-            foreach ($chatMembers as $memberForChange) {
-                $member = $chatMembers[$memberForChange] ?? null;
-                if ($member) {
-                    $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberForChange);
+        if ($checkAdmin == ChatController::OWNER && in_array($role, ChatController::getRolesForOwner())) {
+            foreach ($chatMembers as $memberID => $roleValue) {
+                if (in_array($memberID, $membersForChange)) {
+                    $this->redis->zAdd("chat:members:{$chatId}", ['CH'], $role, $memberID);
+
                     $changeUsers[] = [
-                        'user_id' => $memberForChange,
+                        'user_id' => $memberID,
                         'role' => $role,
                     ];
                 }
             }
+
+            $chatMembers = array_map(function ($i) {
+                return intval($i);
+            }, $chatMembers);
+
+            $chatMembers = array_keys($chatMembers);
 
             return ResponseFormatHelper::successResponseInCorrectFormat($chatMembers, [
                 'status' => 'true',
                 'users' => $changeUsers,
                 'chat_id' => $chatId
             ]);
-
         }
 
         return ResponseFormatHelper::successResponseInCorrectFormat($chatMembers, [
@@ -315,8 +330,8 @@ class MemberController
 
         // all chat users
 
-        $chatMembers = ChatHelper::getChatMembers($chatId,$this->redis);
-        array_push($chatMembers,$data['user_id']);
+        $chatMembers = ChatHelper::getChatMembers($chatId, $this->redis);
+        array_push($chatMembers, $data['user_id']);
 
         $multiResponseData = [];
 
@@ -398,20 +413,16 @@ class MemberController
 
         $userStatus = $this->redis->zRangeByScore("chat:members:{$chatId}", $userId, $userId);
 
-        if ($userStatus == ChatController::BANNED || $userStatus == false) {
-            $this->redis->zRem("user:chats:{$userId}", $chatId);
-        } else {
-            $this->redis->zRem("user:chats:{$userId}", $chatId);
+        if ($userStatus != ChatController::BANNED || $userStatus != false) {
             $this->redis->zRem("user:chat:members:{$chatId}", $userId);
         }
+
+        $this->redis->zRem("user:chats:{$userId}", $chatId);
+        $this->redis->set("chat:deleted:{$userId}:{$chatId}", time());
 
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             "chat_id" => $chatId,
             "status" => true
         ]);
-
-
     }
-
-
 }

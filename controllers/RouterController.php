@@ -52,11 +52,12 @@ class RouterController
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
         ],
-        'chat:members' => [
+        # TODO need?
+        /*'chat:members' => [
             'action' => 'ChatController@getChatMembers',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class],
-        ],
+        ],*/
 
         'chat:change:name' => [
             'action' => 'ChatController@changeChatName',
@@ -117,11 +118,11 @@ class RouterController
         ],
 
         // memberController
-        /*'chat:members' => [
+        'chat:members' => [
             'action' => 'MemberController@getChatMembers',
             'params' => true,
             'middleware' => [ValidationMiddleware::class, CheckUserTokenMiddleware::class, CheckUserInChatMembersMiddleware::class],
-        ],*/
+        ],
         'chat:members:privileges' => [
             'action' => 'MemberController@changeUserPrivileges',
             'params' => true,
@@ -226,8 +227,8 @@ class RouterController
         $params['cmd'] = $route;
         $params['cmd_name'] = $cmdName;
 
-        echo "PARAMS\n"; # TODO remove;
-        Helper::log($params);
+//        echo "PARAMS\n"; # TODO remove;
+//        Helper::log($params);
 
         if ($route) {
             $controllerAndMethod = explode('@', $route['action']);

@@ -67,14 +67,12 @@ class ChatController
      */
     public function create(array $data)
     {
-
         $data = Factory::getItem($data['type'])->create($data, $this->redis);
 
         $notifyUsers = ChatHelper::getChatMembers($data['chat_id'], $this->redis);
         $this->redis->close();
 
         return ResponseFormatHelper::successResponseInCorrectFormat($notifyUsers, $data);
-
     }
 
     /**
@@ -83,8 +81,6 @@ class ChatController
      */
     public function getAll(array $data)
     {
-        echo "GET ALL\n";
-
         $page = $data['page'] ?? 1;
         $onePageChatCount = 20;
 
@@ -93,11 +89,11 @@ class ChatController
 
         $userChatIds = $this->redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
 
-        Helper::log($userChatIds, 'REDIS'); # TODO remove;
+//        Helper::log($userChatIds, 'REDIS'); # TODO remove;
 
         $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
 
-        Helper::log($userChats, 'DB'); # TODO remove;
+//        Helper::log($userChats, 'DB'); # TODO remove;
 
         // нужно для сортировки,
         $responseData = [];
@@ -142,7 +138,7 @@ class ChatController
                     $userName = 'null';
                 }
 
-                $text = $forwardMessageId ? MessageHelper::getMessageText($forwardMessageId,$this->redis) : $lastMessageText;
+                $text = $forwardMessageId ? MessageHelper::getMessageText($forwardMessageId, $this->redis) : $lastMessageText;
 
                 if (!$text) {
                     $text = 'null';
@@ -343,6 +339,7 @@ class ChatController
         $avatar = $data['file_name'];
 
         $this->redis->set("group:avatar{$chatId}");
+
         Manager::table('chats')
             ->where('id', $chatId)
             ->where('type', ChatController::GROUP)
@@ -356,9 +353,5 @@ class ChatController
             'avatar' => $avatar,
             'avatar_url' => ChatHelper::GROUP_AVATAR_URL
         ]);
-
-
     }
-
-
 }

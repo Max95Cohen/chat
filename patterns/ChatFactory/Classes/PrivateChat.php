@@ -12,6 +12,7 @@ use Traits\RedisTrait;
 class PrivateChat implements BaseChatCreateInterface
 {
     use RedisTrait;
+
     /**
      * @param array $data
      * @param Redis $redis
@@ -27,18 +28,20 @@ class PrivateChat implements BaseChatCreateInterface
         // если чат между двумя пользователями уже существует вовзращаю его
 
         if ($checkChat) {
+            $chatDeleted = $this->redis->get("chat:deleted:{$data['user_id']}:{$checkChat}");
 
-            return [
-                'status' => 'false',
-                'chat_id' => $checkChat,
-                'name' => $anotherUserName,
-                'avatar' => $anotherUserAvatar,
-                'user_id' => $anotherUserId,
-            ];
-
+            if (!$chatDeleted) {
+                return [
+                    'status' => 'false',
+                    'chat_id' => $checkChat,
+                    'name' => $anotherUserName,
+                    'avatar' => $anotherUserAvatar,
+                    'user_id' => $anotherUserId,
+                ];
+            }
         }
 
-        $twoUsers = array_merge([$data['user_id']],[$data['user_ids']]);
+        $twoUsers = array_merge([$data['user_id']], [$data['user_ids']]);
 
         // добавляю созданный чат в mysql
         $chatId = DB::table('chats')->insertGetId([
@@ -47,6 +50,7 @@ class PrivateChat implements BaseChatCreateInterface
             'type' => $data['type'],
             'members_count' => 2,
         ]);
+
         $membersData = [];
 
         foreach ($twoUsers as $userId) {
@@ -61,10 +65,13 @@ class PrivateChat implements BaseChatCreateInterface
             $this->redis->set("private:{$userId}:{$data['user_id']}", $chatId);
             $this->redis->set("private:{$data['user_id']}:{$userId}", $chatId);
         }
+
         DB::table('chat_members')->insert($membersData);
+
         $this->redis->zAdd("chat:{$chatId}", ['NX'], time(), "chat:message:create");
 
         $this->redis->close();
+
         return [
             'status' => 'true',
             'chat_name' => $anotherUserName,
@@ -72,7 +79,5 @@ class PrivateChat implements BaseChatCreateInterface
             'user_id' => $anotherUserId,
             'type' => $data['type'],
         ];
-
-
     }
 }

@@ -4,6 +4,7 @@
 namespace Patterns\MessageFactory\Classes;
 
 
+use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Factory;
@@ -12,7 +13,6 @@ use Redis;
 
 class ReplyMessage implements MessageInterface
 {
-
     /**
      * @param Redis $redis
      * @param string $redisKey
@@ -90,6 +90,43 @@ class ReplyMessage implements MessageInterface
             'user_name' => $redis->get("user:name:{$messageData['user_id']}"),
             'user_id' => $messageData['user_id'],
             'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
+        ];
+    }
+
+    /**
+     * @param $data
+     * @param Redis $redis
+     * @return array
+     */
+    public function editMessage($data, Redis $redis)
+    {
+        MediaHelper::messageEditInRedis($data, $redis);
+
+        # TODO update in MySQL DB;
+//        MediaHelper::messageEditInMysql($data);
+
+        //@TODO тут будет логика для удаления старых файлов и.т.д
+
+        if (!isset($data['attachments'])) {
+            $attachments = $redis->hGet($data['message_id'], 'attachments');
+            $data['attachments'] = $attachments;
+
+            $attachments = json_decode($attachments, true);
+
+            $data['attachmentsNew'] = $attachments;
+        }
+
+        return [
+            'chat_id' => $data['chat_id'],
+            'message_id' => $data['message_id'],
+            'text' => $data['text'],
+            'user_id' => $data['user_id'],
+            'time' => $data['time'],
+            'avatar' => $redis->get("user:avatar:{$data['user_id']}") ?? '',
+            'user_name' => $redis->get("user:name:{$data['user_id']}") ?? '',
+            'avatar_url' => 'https://indigo24.xyz/uploads/avatars/',
+            'type' => $data['message_type'],
+            'edit' => 1,
         ];
     }
 }

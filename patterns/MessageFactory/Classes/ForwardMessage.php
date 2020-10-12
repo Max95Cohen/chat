@@ -36,6 +36,8 @@ class ForwardMessage implements MessageInterface
 
     public function returnResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
+        echo "Text";
+
         $messageData = MessageHelper::getResponseDataForCreateMessage($data, $messageRedisKey, $redis);
 
         $messageData['text'] = $redis->hGet($messageRedisKey, 'text');
@@ -124,7 +126,8 @@ class ForwardMessage implements MessageInterface
                     'attachments' => $attachments,
                     'attachment_url' => method_exists($messageClass, 'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                     'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
-                    'forward_data' => $forwardData ? json_encode($forwardData) : null,
+                    'forward_data' => $forwardData ?: null,
+                    'FORWAR' => 111,
                     'write' => $messageInRedis['status'],
                     'edit' => $edit,
                 ];

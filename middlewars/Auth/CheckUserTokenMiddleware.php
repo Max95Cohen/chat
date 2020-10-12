@@ -9,10 +9,8 @@ use Redis;
 
 class CheckUserTokenMiddleware implements BaseMiddlewareInterface
 {
-
     public $next = false;
     private $redis;
-
 
     public function __construct()
     {
@@ -24,6 +22,7 @@ class CheckUserTokenMiddleware implements BaseMiddlewareInterface
     {
         if (UserHelper::CheckUserToken($data['userToken'], $data['user_id'], $this->redis) == false) {
             $this->redis->close();
+
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
                 'success' => 'false',
                 'message' => 'нужно авторизоваться токен устарел',

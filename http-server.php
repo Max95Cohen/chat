@@ -9,12 +9,13 @@ use Gumlet\ImageResize;
 
 require __DIR__ . '/vendor/autoload.php';
 
-const MEDIA_DIR = '/var/www/media.chat.indigo24.com/';
-const MEDIA_URL = 'https://media.chat.indigo24.com/media/';
+const MEDIA_DIR = '/var/www/media.chat.indigo24';
+const MEDIA_URL = 'https://media.chat.indigo24.xyz/media/';
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 
 $config = ConfigHelper::getDbConfig('chat_db');
+
 $capsule->addConnection([
     'driver' => $config['driver'],
     'host' => $config['host'],
@@ -26,20 +27,25 @@ $capsule->addConnection([
     'prefix' => $config['prefix'],
 ]);
 
-
 $capsule->setAsGlobal();
 
+//$mediaUrl = 'http://media.loc/files';
 
-$mediaUrl = 'http://media.loc/files';
+$http = new Swoole\Http\Server('0.0.0.0', 9517);
 
-$http = new Swoole\Http\Server("0.0.0.0", 9517);
 $http->set([
     'package_max_length' => 100 * 1024 * 1024,
 ]);
 
-
 $http->on('request', function ($request, $response) {
-    $mimeType = mime_content_type($request->files['file']['tmp_name']);
+    print_r($request); # TODO remove;
+
+    $mimeType = null;
+
+    if (isset($request->files['file']['tmp_name'])) {
+        $mimeType = mime_content_type($request->files['file']['tmp_name']);
+    }
+
     $group = $request->post['group'] ?? null;
 
     if ($group && MediaHelper::checkAllowedMimeType($mimeType)) {
@@ -59,7 +65,6 @@ $http->on('request', function ($request, $response) {
         $image = new ImageResize($filePath);
         $image->crop(200, 200, true, ImageResize::CROPCENTER);
         $image->save("/var/www/media.chat.indigo24.com/media/images/{$resizeFileName}");
-
 
         $response->header("Content-Type", "application/json");
         $response->end(json_encode([

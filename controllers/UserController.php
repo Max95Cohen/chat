@@ -1,10 +1,9 @@
 <?php
 
-
 namespace Controllers;
 
-
 use Carbon\Carbon;
+use Helpers\ConfigHelper;
 use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\PhoneHelper;
@@ -12,11 +11,11 @@ use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Redis;
 use Traits\RedisTrait;
+use Illuminate\Database\Capsule\Manager;
 
 class UserController
 {
     use RedisTrait;
-
 
     const USER_ONLINE = 1;
 
@@ -26,35 +25,77 @@ class UserController
 
         $phone = PhoneHelper::replaceForSeven($phone);
 
-        $checkExist = $this->redis->get("user:phone:{$phone}");
+        $userID = $this->redis->get("user:phone:{$phone}");
 
-        if ($checkExist) {
-            $userId = (int)$checkExist;
-            $avatar = $this->redis->get("user:avatar:{$userId}");
+        $foundUser = false;
 
-            $chatId = $this->redis->get("private:{$userId}:{$data['user_id']}");
-            $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userId}") : $chatId;
-            $online = UserHelper::checkOnline($userId, $this->redis);
-            $name = $this->redis->get("user:name:{$userId}");
-            $this->redis->close();
+        if ($userID) {
+            $userID = (int)$userID;
+            $avatar = $this->redis->get("user:avatar:{$userID}");
 
+            $online = UserHelper::checkOnline($userID, $this->redis);
+
+            $name = $this->redis->get("user:name:{$userID}");
+
+            $foundUser = true;
+        } else {
+            $capsule = new Manager;
+
+            $config = ConfigHelper::getDbConfig('mobile_db');
+
+            $capsule->addConnection([
+                'driver' => $config['driver'],
+                'host' => $config['host'],
+                'database' => $config['database'],
+                'username' => $config['username'],
+                'password' => $config['password'],
+                'charset' => $config['charset'],
+                'collation' => $config['collation'],
+                'prefix' => $config['prefix'],
+            ]);
+
+            $capsule->setAsGlobal();
+
+            $user = Manager::table('customers')->where('phone', $phone)
+                ->first(['id', 'name', 'avatar', 'phone']);
+
+            $phoneInCorrectFormat = PhoneHelper::replaceForSeven($user->phone);
+
+            $this->redis->set("user:avatar:{$user->id}", $user->avatar);
+            $this->redis->set("user:name:{$user->id}", $user->name);
+            $this->redis->set("userId:phone:{$user->id}", $user->phone);
+            $this->redis->set("user:phone:{$phoneInCorrectFormat}", $user->id);
+
+            $avatar = $user->avatar;
+            $name = $user->name;
+            $online = false;
+
+            $foundUser = true;
+        }
+
+        $chatId = $this->redis->get("private:{$userID}:{$data['user_id']}");
+        $chatId = $chatId == false ? $this->redis->get("private:{$data['user_id']}:{$userID}") : $chatId;
+
+        $chatDeletedByUser = $this->redis->get("chat:deleted:{$data['user_id']}:{$chatId}");
+
+        if ($chatDeletedByUser) {
+            $chatId = false;
+        }
+
+        $this->redis->close();
+
+        if ($foundUser) {
             return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
                 'status' => 'true',
                 'phone' => strval($data['phone']),
-                'user_id' => $userId,
+                'user_id' => $userID,
                 'avatar' => $avatar,
                 'name' => $name,
                 'avatar_url' => MessageHelper::AVATAR_URL,
                 'chat_id' => $chatId,
                 'online' => $online
             ]);
-        } else {
-            $user = DB::table('customers')->where('phone', $phone)->get(['id', 'name', 'avatar', 'phone']);
-
-            Helper::log($user, 'NOT FOUND');
         }
-
-        $this->redis->close();
 
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], [
             'status' => 'false',
@@ -96,7 +137,6 @@ class UserController
 
     public function checkOnline(array $data)
     {
-
         $usersIds = explode(',', $data['users_ids']);
 
         $responseData = [];

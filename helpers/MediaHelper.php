@@ -111,18 +111,18 @@ class MediaHelper
      * @param $type
      * @return bool
      */
-    public static function checkAllowedMimeType($type) :bool
+    public static function checkAllowedMimeType($type): bool
     {
-        return in_array($type,self::getAllowedMimeTypes());
+        return in_array($type, self::getAllowedMimeTypes());
     }
 
     /**
      * @param $type
      * @return mixed|string
      */
-    public static function getExtensionByMimeType($type) :string
+    public static function getExtensionByMimeType($type): string
     {
-        return '.'.explode('/',$type)[1];
+        return '.' . explode('/', $type)[1];
     }
 
 
@@ -156,28 +156,38 @@ class MediaHelper
      */
     public static function generateFileNameForSmallImage(string $extension, int $size = 200)
     {
-        return Str::random(rand(30,35)) ."_{$size}x{$size}". $extension;
+        return Str::random(rand(30, 35)) . "_{$size}x{$size}" . $extension;
     }
 
     /**
      * @param array $data
      * @param Redis $redis
      */
-    public static function messageEditInRedis(array $data, Redis $redis) :void
+    public static function messageEditInRedis(array $data, Redis $redis): void
     {
         $checkMessageInRedis = $redis->hGetAll($data['message_id']);
+
         if ($checkMessageInRedis) {
-            $redis->hMSet($data['message_id'],'attachments',$data['attachments']);
-            $redis->hMSet($data['message_id'],'status',MessageHelper::MESSAGE_EDITED_STATUS);
+            if (isset($data['text'])) {
+                $redis->hMSet($data['message_id'], ['text' => $data['text']]);
+            }
+
+            if (isset($data['attachments'])) {
+                $redis->hMSet($data['message_id'], ['attachments' => $data['attachments']]);
+            }
+
+            $redis->hMSet($data['message_id'], ['status' => MessageHelper::MESSAGE_EDITED_STATUS]);
         }
 
+        global $capsule; # TODO remove;
+        print_r($capsule);
     }
 
     /**
      * @param array $data
      * @param $sql
      */
-    public static function messageEditInMysql(array $data, $sql) :void
+    public static function messageEditInMysql(array $data, $sql): void
     {
         $sql->update([
             'attachments' => $data['attachments'],
@@ -185,5 +195,4 @@ class MediaHelper
             'status' => MessageHelper::MESSAGE_EDITED_STATUS,
         ]);
     }
-
 }

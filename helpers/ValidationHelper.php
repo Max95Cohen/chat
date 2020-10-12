@@ -9,7 +9,6 @@ use Validation\Interfaces\BaseValidationInterface;
 
 class ValidationHelper
 {
-
     const NAMESPACE = 'Validation\\';
 
     /*
@@ -23,16 +22,12 @@ class ValidationHelper
      * @param string $cmd
      * @return BaseValidationInterface
      */
-    public static function getValidationClass(string $cmd) :BaseValidationInterface
+    public static function getValidationClass(string $cmd): BaseValidationInterface
     {
-        $classNameInSnakeKeys = str_replace(':','_',$cmd);
+        $classNameInSnakeKeys = str_replace(':', '_', $cmd);
 
-        $class = self::NAMESPACE.ucfirst(Str::camel($classNameInSnakeKeys)) .'Validation';
+        $class = self::NAMESPACE . ucfirst(Str::camel($classNameInSnakeKeys)) . 'Validation';
 
         return new $class;
     }
-
-
-
-
 }

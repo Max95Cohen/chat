@@ -16,7 +16,6 @@ class VideoMessage
     const VIDEO_MEDIA_ULR = 'video/';
     const VIDEO_MEDIA_DIR = 'media/video/';
 
-
     /**
      * @return string
      */
@@ -93,8 +92,15 @@ class VideoMessage
     {
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
-        $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
-        $messageData['text'] = $redis->hGet($messageRedisKey,'text');
+        $text = $redis->hGet($messageRedisKey,'text') ?: 'null';
+
+        $attachments = $redis->hGet($messageRedisKey,'attachments');
+
+        $attachmentsNew = json_decode($attachments, true);
+
+        $messageData['attachments'] = $attachments;
+        $messageData['attachmentsNew'] = $attachmentsNew;
+        $messageData['text'] = $text;
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VIDEO_MESSAGE_TYPE;
         $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VIDEO_MESSAGE_TYPE) ?? null;
@@ -109,11 +115,25 @@ class VideoMessage
     public function editMessage($data, Redis $redis)
     {
         MediaHelper::messageEditInRedis($data, $redis);
-        MediaHelper::messageEditInMysql($data);
+
+        # TODO update in MySQL DB;
+//        MediaHelper::messageEditInMysql($data);
+
         //@TODO тут будет логика для удаления старых файлов и.т.д
+
+        if (!isset($data['attachments'])) {
+            $attachments = $redis->hGet($data['message_id'], 'attachments');
+            $data['attachments'] = $attachments;
+
+            $attachments = json_decode($attachments, true);
+
+            $data['attachmentsNew'] = $attachments;
+        }
+
         return [
             'chat_id' => $data['chat_id'],
             'attachments' => $data['attachments'],
+            'attachmentsNew' => $data['attachmentsNew'],
             'attachment_url' => self::getMediaUrl(),
             'message_id' => $data['message_id'],
             'text' => $data['text'],

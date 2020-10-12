@@ -12,7 +12,6 @@ class ContactController
 {
     use RedisTrait;
 
-
     /**
      * @param array $data
      * @return array[]
@@ -45,9 +44,7 @@ class ContactController
 
         }
 
-
-        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']],$userContacts);
-
+        return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $userContacts);
     }
 
 
@@ -66,32 +63,21 @@ class ContactController
             $customerId = $this->redis->get("user:phone:{$phone}");
 
             if ($customerId) {
-                $this->redis->zAdd("usr:con:{$userId}",['NX'],$customerId,$phone);
+                $this->redis->zAdd("usr:con:{$userId}", ['NX'], $customerId, $phone);
 
-                return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+                return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
                     'user_id' => $customerId,
                     'user_name' => $this->redis->get("user:name:{$customerId}"),
                     'phone' => $phone,
-                    'chat_id' =>$this->redis->get("private:{$data['user_id']}:{$customerId}"),
+                    'chat_id' => $this->redis->get("private:{$data['user_id']}:{$customerId}"),
                     'status' => true,
                 ]);
-
             }
         }
 
-        return ResponseFormatHelper::successResponseInCorrectFormat([$userId],[
+        return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
             'phone' => $phone,
             'status' => false,
         ]);
-
-
     }
-
-
-
-
-
-
-
-
 }

@@ -37,24 +37,24 @@ $capsule->setAsGlobal();
 Carbon::setLocale('ru');
 
 $server->on('open', function ($server, $req) {
-    echo "OPEN\n";
+    echo "OPEN {$req->fd}\n";
 
     return $req->fd;
 });
 
 $server->on('message', function ($server, $frame) {
-    echo "MESSAGE\n";
-
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);
 
     $requestData = json_decode($frame->data, true);
 
+//    Helper::log($requestData, 'REQUEST'); # TODO remove;
+
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
 
-    Helper::log($responseData); # TODO remove;
+//    Helper::log($responseData, 'RESPONSE'); # TODO remove;
 
     $notifyUsers = $responseData['notify_users'];
     $response = [];
@@ -79,9 +79,7 @@ $server->on('message', function ($server, $frame) {
 });
 
 $server->on('close', function ($server, $fd) {
-    echo "CLOSE\n";
-
-    Helper::log("connection close: {$fd}");
+    echo "CLOSE {$fd}\n";
 
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);

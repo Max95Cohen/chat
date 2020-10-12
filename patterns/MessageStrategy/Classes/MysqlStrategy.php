@@ -99,6 +99,7 @@ class MysqlStrategy
                 'attachment_url' => method_exists($messageClass, 'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                 'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
                 'forward_data' => $forwardData ? json_encode($forwardData) : null,
+                'forward_dataNew' => $forwardData ?: null,
                 'message_for_type' => MessageHelper::getAttachmentTypeString($message->type),
                 'write' => (string)$message->status,
                 'edit' => $edit,

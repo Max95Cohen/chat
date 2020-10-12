@@ -20,7 +20,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
     /**
      * @return string
      */
-    public static function getMediaDir() :string
+    public static function getMediaDir(): string
     {
         return MEDIA_DIR . '/' . self::VOICE_MEDIA_DIR;
     }
@@ -28,7 +28,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
     /**
      * @return string
      */
-    public static function getMediaUrl() :string
+    public static function getMediaUrl(): string
     {
         return MEDIA_URL . self::VOICE_MEDIA_ULR . '/';
     }
@@ -38,11 +38,11 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      * @param Request $request
      * @return array
      */
-    public function upload(Request $request) :array
+    public function upload(Request $request): array
     {
         $extension = '.mp3';
-        $fileName  = MediaHelper::generateFileName($extension);
-        move_uploaded_file( $request->files['file']['tmp_name'],self::getMediaDir() . "/{$fileName}");
+        $fileName = MediaHelper::generateFileName($extension);
+        move_uploaded_file($request->files['file']['tmp_name'], self::getMediaDir() . "/{$fileName}");
         return [
             'data' => [
                 'status' => true,
@@ -53,7 +53,6 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
         ];
 
 
-
     }
 
     /**
@@ -61,10 +60,10 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      * @param string $redisKey
      * @param array $data
      */
-    public function addExtraFields(Redis $redis, string $redisKey, array $data) :void
+    public function addExtraFields(Redis $redis, string $redisKey, array $data): void
     {
-        $redis->hSet($redisKey,'type',MessageHelper::VOICE_MESSAGE_TYPE);
-        $redis->hSet($redisKey,'attachments',json_encode($data['attachments']));
+        $redis->hSet($redisKey, 'type', MessageHelper::VOICE_MESSAGE_TYPE);
+        $redis->hSet($redisKey, 'attachments', json_encode($data['attachments']));
     }
 
     /**
@@ -75,9 +74,9 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
      */
     public function returnResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
-        $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
+        $messageData = MessageHelper::getResponseDataForCreateMessage($data, $messageRedisKey, $redis);
 
-        $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
+        $messageData['attachments'] = $redis->hGet($messageRedisKey, 'attachments');
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::VOICE_MESSAGE_TYPE;
         $messageData['message_text_for_type'] = MessageHelper::getAttachmentTypeString(MessageHelper::VOICE_MESSAGE_TYPE) ?? null;
@@ -101,7 +100,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             : $messageDataInRedis;
         //@TODO преписать через хелперскую функию вынести туда общие для всех классов поля и черех ... собирать в 1 массив
 
-        $attachments = json_decode($messageData['attachments'],true);
+        $attachments = json_decode($messageData['attachments'], true);
 
         return [
             'message_id' => $messageId,
@@ -115,6 +114,7 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             'is_deleted' => $messageData['status'] == MessageHelper::MESSAGE_DELETED_STATUS,
         ];
     }
+
     /**
      * @param array $data
      * @param Redis $redis
@@ -142,11 +142,25 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
     public function editMessage($data, Redis $redis)
     {
         MediaHelper::messageEditInRedis($data, $redis);
-        MediaHelper::messageEditInMysql($data);
+
+        # TODO update in MySQL DB;
+//        MediaHelper::messageEditInMysql($data);
+
         //@TODO тут будет логика для удаления старых файлов и.т.д
+
+        if (!isset($data['attachments'])) {
+            $attachments = $redis->hGet($data['message_id'], 'attachments');
+            $data['attachments'] = $attachments;
+
+            $attachments = json_decode($attachments, true);
+
+            $data['attachmentsNew'] = $attachments;
+        }
+
         return [
             'chat_id' => $data['chat_id'],
             'attachments' => $data['attachments'],
+            'attachmentsNew' => $data['attachmentsNew'],
             'attachment_url' => self::getMediaUrl(),
             'message_id' => $data['message_id'],
             'text' => $data['text'],
@@ -159,8 +173,4 @@ class VoiceMessage implements MessageInterface, MediaMessageInterface
             'edit' => 1,
         ];
     }
-
-
-
-
 }

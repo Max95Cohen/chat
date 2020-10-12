@@ -31,7 +31,7 @@ class RedisStrategy implements MessageStrategyInterface
 
         $chatMessagesId = $this->redis->zRevRangeByScore("chat:{$chatId}", '+inf', '-inf', ['limit' => [$startChat, $endChat, 'withscores' => true]]);
 
-        Helper::log($chatMessagesId); # TODO remove;
+//        Helper::log($chatMessagesId); # TODO remove;
 
         $messagesForDivider = [];
         foreach ($chatMessagesId as $chatMessageId) {
@@ -96,10 +96,9 @@ class RedisStrategy implements MessageStrategyInterface
                         'stick_id' => $stickerId,
                         'path' => $sticker['path']
                     ]],JSON_UNESCAPED_UNICODE);
-
                 }
 
-
+                $attachmentsNew = json_decode($attachments, true);
 
                 $messageAnotherUserId = $message['another_user_id'] ?? null;
                 $extension = $message['extension'] ?? null;
@@ -112,6 +111,13 @@ class RedisStrategy implements MessageStrategyInterface
                     continue;
                 }
 
+                $text = $message['text'] ?? 'null';
+
+                if (empty($text)) {
+                    $text = 'null';
+                }
+
+                $type = $message['type'] ?? 0;
 
                 $messagesForDivider[] = [
                     'id' => $chatMessageId,
@@ -120,15 +126,17 @@ class RedisStrategy implements MessageStrategyInterface
                     'phone' => $this->redis->get("user:phone:{$message['user_id']}"),
                     'avatar_url' => MessageHelper::AVATAR_URL,
                     'user_name' => $this->redis->get("user:name:{$message['user_id']}"),
-                    'text' => $message['text'] ?? null,
-                    'type' => $message['type'] ?? 0,
+                    'text' => $text,
+                    'type' => $type,
                     'chat_id' => $message['chat_id'] ?? null,
                     'extension' => $extension == false ? null : $extension,
                     'time' => $messageTime,
                     'attachments' => $attachments,
+                    'attachmentsNew' => $attachmentsNew,
                     'attachment_url' => method_exists($messageClass, 'getMediaUrl') ? $messageClass::getMediaUrl() : null,
                     'reply_data' => $replyMessageId ? $replyMessageClass->getOriginalDataForReply($replyMessageId, $this->redis) : null,
                     'forward_data' => $forwardData ? json_encode($forwardData) : null,
+                    'forward_dataNew' => $forwardData ?: null,
                     'write' => $message['status'],
                     'day' => date('d-m-Y', (int)$message['time']),
                     'edit' => $edit,

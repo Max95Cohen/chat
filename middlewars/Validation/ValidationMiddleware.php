@@ -20,11 +20,9 @@ class ValidationMiddleware implements BaseMiddlewareInterface
             if ($validationErrors) {
                 return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $validationErrors);
             }
-
-
         }
-        $this->setNext(true);
 
+        $this->setNext(true);
     }
 
     /**

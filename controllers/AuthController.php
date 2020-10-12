@@ -4,12 +4,10 @@
 namespace Controllers;
 
 use Helpers\ResponseFormatHelper;
-use Helpers\UserHelper;
 use Redis;
 
 class AuthController
 {
-
     /**
      * @param array $params
      * @return array[]
@@ -29,19 +27,16 @@ class AuthController
             'connection_id' => $connectionId,
         ];
 
+        $redis->zAdd("users:connections", ['CH'], $connectionId, $userId);
 
-        $redis->zAdd("users:connections",['CH'],$connectionId,$userId);
+//        $redis->hset("Customer:{$params['user_id']}", 'unique', $params['userToken']); # TODO need?
 
         // удаляем время последнего выхода юзера из приложения, если этого ключа нет пользователь онлайн
         $redis->del("user:last:visit:{$userId}");
-        $redis->set("user:last:visit:{$userId}",UserController::USER_ONLINE);
+        $redis->set("user:last:visit:{$userId}", UserController::USER_ONLINE);
 
         $redis->close();
 
         return ResponseFormatHelper::successResponseInCorrectFormat([$userId], $data);
-
-
     }
-
-
 }

@@ -11,10 +11,10 @@
     // let YerbolatUserId = 113629;
 
     // let chatList = false;
-    var user_id = 1;
+    var user_id = 30220;
     var chat_id = 18503;
-    var userToken = '14a4026d2038ff66f041d172ee33891e82b55425';
-    var message_id = "message:30220:40";
+    var userToken = '632a3040333ddf532c01023c1f0e613a454ff28e';
+    // var message_id = "message:30220:40";
 
     //908102
     socket.addEventListener('open', function (event) {
@@ -39,16 +39,15 @@
 
         // проверяет контакты пользователя
         // check user phone exists
-        // socket.send(JSON.stringify({
-        //     cmd: 'user:check',
-        //     data: {
-        //         user_id: user_id,
-        //         userToken: userToken,
-        //         validation: true,
-        //         // phone:'77714010175',
-        //     }
-        //
-        // }));
+        socket.send(JSON.stringify({
+            cmd: 'user:check',
+            data: {
+                user_id: 30220,
+                userToken: userToken,
+                // validation: true,
+                phone:'77752222422',
+            }
+        }));
 
         // создает чат
         // socket.send(JSON.stringify({

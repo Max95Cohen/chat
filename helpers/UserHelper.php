@@ -18,15 +18,12 @@ class UserHelper
     /**
      * @return string[]
      */
-    public static function getAllSettingsKeys () :array
+    public static function getAllSettingsKeys(): array
     {
         return [
-          self::SETTING_CHAT_MUTE_ALL,
+            self::SETTING_CHAT_MUTE_ALL,
         ];
     }
-
-
-
 
     /**
      * @param $userId
@@ -38,8 +35,11 @@ class UserHelper
         $redis = new Redis();
         $redis->connect('127.0.0.1', 6379);
 
-        return $redis->hGet($userId, 'token') == $token ? true : null;
+        $tokenInRedis = $redis->hGet($userId, 'token');
 
+        $redis->close();
+
+        return $tokenInRedis == $token ? true : null;
     }
 
     public static function checkOnline($userId, Redis $redis)
@@ -53,16 +53,13 @@ class UserHelper
             $lastVisitDate = $messageCreatedDate->diffForHumans(Carbon::now());
 
             $lastVisitDate = preg_replace('#до#', 'назад', $lastVisitDate);
-
         }
 
         if ($offline == false) {
             $lastVisitDate = 'offline';
         }
 
-
         return $lastVisitDate;
-
     }
 
     /**
@@ -73,7 +70,9 @@ class UserHelper
      */
     public static function CheckUserToken(string $frontEndToken, int $userId, Redis $redis): bool
     {
-        return $redis->hGet("Customer:{$userId}", 'unique') == $frontEndToken;
+        $unique = $redis->hGet("Customer:{$userId}", 'unique');
+
+        return $unique == $frontEndToken;
     }
 
 
@@ -103,7 +102,6 @@ class UserHelper
         $userRole = !is_null($chatMembers[$userId]) ? intval($chatMembers[$userId]) : null;
 
         return in_array($userRole, ChatController::getRolesForAdministrators());
-
     }
 
 
@@ -112,11 +110,9 @@ class UserHelper
      * @param Redis $redis
      * @return string
      */
-    public static function getUserAvatar(int $userId, Redis $redis) :string
+    public static function getUserAvatar(int $userId, Redis $redis): string
     {
         $avatar = $redis->get("user:avatar:{$userId}");
         return $avatar == false ? 'noAvatar.png' : $avatar;
     }
-
-
 }
