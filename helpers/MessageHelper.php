@@ -99,7 +99,6 @@ class MessageHelper
         $redis->hSet($messageRedisKey, 'type', $data['message_type']);
 
         return $messageRedisKey;
-
     }
 
     /**

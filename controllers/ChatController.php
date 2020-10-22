@@ -253,7 +253,9 @@ class ChatController
         return ResponseFormatHelper::successResponseInCorrectFormat([$userId], [
             'user_id' => $userId,
             'chat_id' => $chatId,
+            'message' => 'чат успешно закреплен',
             'status' => 'true',
+            'pinned_count' => $pinnedCount
         ]);
     }
 

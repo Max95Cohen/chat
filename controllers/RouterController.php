@@ -228,7 +228,7 @@ class RouterController
         $params['cmd_name'] = $cmdName;
 
 //        echo "PARAMS\n"; # TODO remove;
-//        Helper::log($params);
+//        Helper::log($params); # TODO remove;
 
         if ($route) {
             $controllerAndMethod = explode('@', $route['action']);

@@ -27,6 +27,14 @@
             }
         }));
 
+        socket.send(JSON.stringify({
+            cmd: 'chat:stickers',
+            data: {
+                user_id: user_id,
+                userToken: userToken,
+            }
+        }));
+
         // socket.send(JSON.stringify({
         //     cmd: 'test:ping',
         //     data: {
@@ -39,7 +47,7 @@
 
         // проверяет контакты пользователя
         // check user phone exists
-        socket.send(JSON.stringify({
+        /*socket.send(JSON.stringify({
             cmd: 'user:check',
             data: {
                 user_id: 30220,
@@ -47,7 +55,7 @@
                 // validation: true,
                 phone:'77752222422',
             }
-        }));
+        }));*/
 
         // создает чат
         // socket.send(JSON.stringify({
@@ -377,15 +385,6 @@
         //
         // socket.send(JSON.stringify({
         //     cmd: 'user:settings:get',
-        //     data: {
-        //         user_id: user_id,
-        //         userToken: userToken,
-        //     }
-        //
-        // }));
-
-        // socket.send(JSON.stringify({
-        //     cmd: 'chat:stickers',
         //     data: {
         //         user_id: user_id,
         //         userToken: userToken,

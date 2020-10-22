@@ -62,6 +62,22 @@ class UserHelper
         return $lastVisitDate;
     }
 
+    public static function checkOnlineNew($userId, Redis $redis)
+    {
+        $offline = $redis->get("user:last:visit:{$userId}");
+        $lastVisitDate = 'online';
+
+        if ($offline != UserController::USER_ONLINE && $offline != false) {
+            $lastVisitDate = $offline;
+        }
+
+        if ($offline == false) {
+            $lastVisitDate = 'offline';
+        }
+
+        return $lastVisitDate;
+    }
+
     /**
      * @param string $frontEndToken
      * @param int $userId

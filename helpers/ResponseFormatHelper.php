@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Helpers;
-
 
 class ResponseFormatHelper
 {
@@ -18,7 +16,4 @@ class ResponseFormatHelper
             'data' => $data,
         ];
     }
-
-
-
 }

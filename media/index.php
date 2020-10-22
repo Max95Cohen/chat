@@ -1,3 +1,3 @@
 <?php
 
-echo 'hw';
+echo '<!-- echo';

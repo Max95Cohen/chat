@@ -137,16 +137,20 @@ class UserController
 
     public function checkOnline(array $data)
     {
+        Helper::log($data, 'DATA'); # TODO remove;
+
         $usersIds = explode(',', $data['users_ids']);
 
         $responseData = [];
-        foreach ($usersIds as $userId) {
 
+        foreach ($usersIds as $userId) {
             $online = UserHelper::checkOnline($userId, $this->redis);
+            $onlineNew = UserHelper::checkOnlineNew($userId, $this->redis);
 
             $responseData[] = [
                 'user_id' => $userId,
-                'online' => $online
+                'online' => $online,
+                'onlineNew' => $onlineNew,
             ];
         }
 

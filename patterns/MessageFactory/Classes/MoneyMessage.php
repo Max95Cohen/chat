@@ -4,6 +4,7 @@
 namespace Patterns\MessageFactory\Classes;
 
 
+use Helpers\Helper;
 use Helpers\MessageHelper;
 use Illuminate\Database\Capsule\Manager;
 use Patterns\MessageFactory\Interfaces\MessageInterface;
@@ -20,12 +21,12 @@ class MoneyMessage implements MessageInterface
      */
     public function returnResponseDataForCreateMessage(array $data, string $messageRedisKey, Redis $redis): array
     {
-        $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
+        $messageData = MessageHelper::getResponseDataForCreateMessage($data, $messageRedisKey, $redis);
 
-        $anotherUserId = $redis->hGet($messageRedisKey,'another_user_id');
+        $anotherUserId = $redis->hGet($messageRedisKey, 'another_user_id');
 
         $messageData['type'] = MessageHelper::MONEY_MESSAGE_TYPE;
-        $messageData['text'] = $redis->hGet($messageRedisKey,'text');
+        $messageData['text'] = $redis->hGet($messageRedisKey, 'text');
         $messageData['another_user_id'] = $anotherUserId;
         $messageData['another_user_name'] = $redis->get("user:name:{$anotherUserId}");
         $messageData['another_user_avatar'] = $redis->get("user:avatar:{$anotherUserId}");
@@ -79,18 +80,18 @@ class MoneyMessage implements MessageInterface
         // тут достаем данные о совершенном ранее платаже
         $paymentChatMoneyRedisKey = "token:money:chat:{$userId}:{$paymentChatToken}";
 
+        Helper::log($paymentChatMoneyRedisKey, 'REDIS MONEY KEY'); # TODO remove;
+
         $paymentChatMoneyData = $redis->hGetAll($paymentChatMoneyRedisKey);
+
         if ($paymentChatMoneyData) {
+            MessageHelper::create($redis, $data, $redisKey);
 
-            MessageHelper::create($redis,$data,$redisKey);
-
-            $redis->hSet($redisKey,'another_user_id',$paymentChatMoneyData['another_user_id']);
-            $redis->hSet($redisKey,'text',$paymentChatMoneyData['amount']);
-            $redis->hSet($redisKey,'type',MessageHelper::MONEY_MESSAGE_TYPE);
-
+            $redis->hSet($redisKey, 'another_user_id', $paymentChatMoneyData['another_user_id']);
+            $redis->hSet($redisKey, 'text', $paymentChatMoneyData['amount']);
+            $redis->hSet($redisKey, 'type', MessageHelper::MONEY_MESSAGE_TYPE);
         }
+
         $redis->del($paymentChatMoneyRedisKey);
-
-
     }
 }

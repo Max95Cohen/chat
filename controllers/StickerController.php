@@ -9,7 +9,7 @@ class StickerController
 {
     use RedisTrait;
 
-    const STICKER_URL = 'https://media.chat.indigo24.xyz/media/stickers/';
+    const STICKER_URL = 'https://media.chat.indigo24.xyz/media/stickers/'; # TODO update;
 
     public function getAll(array $data)
     {
@@ -22,6 +22,7 @@ class StickerController
             $stickerId = intval($pack);
 
             $packStickers = $this->redis->zRange("st:pack:{$stickerId}", 0, -1);
+
             foreach ($packStickers as $sticker) {
                 $stickerData = $this->redis->hGetAll("sticker:{$sticker}");
 
@@ -33,13 +34,9 @@ class StickerController
                 if ($stickerData['preview']) {
                     $response[$pack]['preview'] = $stickerData['path'];
                 }
-
             }
-
         }
+
         return ResponseFormatHelper::successResponseInCorrectFormat([$data['user_id']], $response);
-
     }
-
-
 }

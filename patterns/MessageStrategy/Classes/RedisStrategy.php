@@ -74,7 +74,7 @@ class RedisStrategy implements MessageStrategyInterface
                     $forwardMessage = $this->redis->hGetAll($forwardMessageId);
                     $forwardMessageInMysql = Manager::table("messages")->where('id', $forwardMessageId)->first();
 
-                    if (!$forwardMessageInMysql && !$forwardMessage){
+                    if (!$forwardMessageInMysql && !$forwardMessage) {
                         continue;
                     }
                     $forwardMessage = $forwardMessage == [] ? $forwardMessageInMysql->toArray() : $forwardMessage;
@@ -82,12 +82,12 @@ class RedisStrategy implements MessageStrategyInterface
                     $avatar = $this->redis->get("user_avatar:{$forwardMessage['user_id']}");
                     $forwardText = $forwardMessage['text'] ?? null;
 
-                    $forwardData = ForwardHelper::getForwardFields($forwardMessage,$forwardMessageId,$this->redis);
+                    $forwardData = ForwardHelper::getForwardFields($forwardMessage, $forwardMessageId, $this->redis);
                     $message['text'] = $forwardText;
                 }
 
                 if ($messageType == MessageHelper::STICKER_MESSAGE_TYPE && $attachments) {
-                    $attachments = json_decode($attachments,true);
+                    $attachments = json_decode($attachments, true);
                     $stickerId = $attachments[0]['stick_id'];
 
                     $sticker = $this->redis->hGetAll("sticker:{$stickerId}");
@@ -95,7 +95,7 @@ class RedisStrategy implements MessageStrategyInterface
                     $attachments = json_encode([[
                         'stick_id' => $stickerId,
                         'path' => $sticker['path']
-                    ]],JSON_UNESCAPED_UNICODE);
+                    ]], JSON_UNESCAPED_UNICODE);
                 }
 
                 $attachmentsNew = json_decode($attachments, true);
@@ -143,13 +143,12 @@ class RedisStrategy implements MessageStrategyInterface
                     'another_user_id' => $messageAnotherUserId,
                     'another_user_avatar' => $messageAnotherUserId ? $this->redis->get("user:avatar:{$messageAnotherUserId}") : null,
                     'another_user_name' => $messageAnotherUserId ? $this->redis->get("user:name:{$messageAnotherUserId}") : null,
-                    'online_users_count' => ChatHelper::getOnlineUsersCount((int) $chatId,$this->redis),
+                    'online_users_count' => ChatHelper::getOnlineUsersCount((int)$chatId, $this->redis),
                     'message_for_type' => MessageHelper::getAttachmentTypeString($message['type'])
                 ];
             }
-
-
         }
+
 //        $allDays = collect($messagesForDivider)->pluck('day')->unique()->toArray();
 //
 //        $messagesWithDivider = [];
@@ -170,9 +169,10 @@ class RedisStrategy implements MessageStrategyInterface
 //            $responseDataWithDivider = [...$responseDataWithDivider, ...$dividerData];
 //
 //        }
-        $this->redis->close();
-        return $messagesForDivider;
 
+        $this->redis->close();
+
+        return $messagesForDivider;
     }
 
     public function setCount(?int $count): int

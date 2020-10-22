@@ -29,7 +29,7 @@ class AuthController
 
         $redis->zAdd("users:connections", ['CH'], $connectionId, $userId);
 
-//        $redis->hset("Customer:{$params['user_id']}", 'unique', $params['userToken']); # TODO need?
+        $redis->hset("Customer:{$params['user_id']}", 'unique', $params['userToken']); # TODO need?
 
         // удаляем время последнего выхода юзера из приложения, если этого ключа нет пользователь онлайн
         $redis->del("user:last:visit:{$userId}");

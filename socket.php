@@ -6,13 +6,13 @@ use Carbon\Carbon;
 use Controllers\RouterController;
 use Helpers\ConfigHelper;
 use Helpers\Helper;
+use Illuminate\Database\Capsule\Manager;
 
 $server = new swoole_websocket_server('0.0.0.0', 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
 
 $capsule = new Illuminate\Database\Capsule\Manager();
 
-const MEDIA_URL = 'https://media.chat.indigo24.xyz/media/';
-const INDIGO_URL = 'https://indigo24.xyz/';
+require_once 'env.php';
 
 $config = ConfigHelper::getDbConfig('chat_db');
 
@@ -28,8 +28,8 @@ $capsule->addConnection([
 ]);
 
 $server->set([
-    'ssl_cert_file' => '/etc/letsencrypt/live/indigo24.xyz/fullchain.pem',
-    'ssl_key_file' => '/etc/letsencrypt/live/indigo24.xyz/privkey.pem'
+    'ssl_cert_file' => Helper::get('CERT_FILE'),
+    'ssl_key_file' => Helper::get('KEY_FILE'),
 ]);
 
 $capsule->setAsGlobal();
@@ -37,7 +37,7 @@ $capsule->setAsGlobal();
 Carbon::setLocale('ru');
 
 $server->on('open', function ($server, $req) {
-    echo "OPEN {$req->fd}\n";
+    echo "OPEN {$req->fd}\n"; # TODO remove;
 
     return $req->fd;
 });
@@ -48,13 +48,13 @@ $server->on('message', function ($server, $frame) {
 
     $requestData = json_decode($frame->data, true);
 
-//    Helper::log($requestData, 'REQUEST'); # TODO remove;
+    Helper::log($requestData, 'REQUEST'); # TODO remove;
 
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
 
-//    Helper::log($responseData, 'RESPONSE'); # TODO remove;
+    Helper::log($responseData, 'RESPONSE'); # TODO remove;
 
     $notifyUsers = $responseData['notify_users'];
     $response = [];
@@ -79,7 +79,7 @@ $server->on('message', function ($server, $frame) {
 });
 
 $server->on('close', function ($server, $fd) {
-    echo "CLOSE {$fd}\n";
+    echo "CLOSE {$fd}\n"; # TODO comment;
 
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);

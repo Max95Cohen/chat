@@ -79,6 +79,7 @@ class DocumentMessage implements MessageInterface,MediaMessageInterface
         $messageData = MessageHelper::getResponseDataForCreateMessage($data,$messageRedisKey,$redis);
 
         $messageData['attachments'] = $redis->hGet($messageRedisKey,'attachments');
+        $messageData['attachmentsNew'] = json_decode($redis->hGet($messageRedisKey,'attachments'), true);
         $messageData['attachment_url'] = self::getMediaUrl();
         $messageData['type'] = MessageHelper::DOCUMENT_MESSAGE_TYPE;
         $messageData['extension'] = $redis->hGet($messageRedisKey,'extension');

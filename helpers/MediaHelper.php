@@ -180,7 +180,6 @@ class MediaHelper
         }
 
         global $capsule; # TODO remove;
-        print_r($capsule);
     }
 
     /**

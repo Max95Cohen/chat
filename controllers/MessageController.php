@@ -43,10 +43,9 @@ class MessageController
 
         $data['message_type'] = $data['message_type'] ?? MessageHelper::TEXT_MESSAGE_TYPE;
 
-        $messageRedisKey = "message:$userId:$messageId";
+        $messageRedisKey = "message:{$userId}:{$messageId}";
 
         $data['message_time'] = time();
-
 
         // добаляем сообщение в redis
         MessageHelper::create($this->redis, $data, $messageRedisKey);
@@ -110,7 +109,7 @@ class MessageController
 
 //        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
 
-        Helper::log(get_class($messageClass), 'CLASS');
+        Helper::log(get_class($messageClass), 'CLASS'); # TODO remove;
 
         $responseData = $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis);
 
