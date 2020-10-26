@@ -49,6 +49,8 @@ class Helper
         } else {
             echo "\n";
         }
+
+        return true;
     }
 
     private static function singleton()
