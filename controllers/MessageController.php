@@ -5,8 +5,6 @@ namespace Controllers;
 use Helpers\ChatHelper;
 use Helpers\ForwardHelper;
 use Helpers\GetResponseForMessageType;
-use Helpers\Helper;
-use Helpers\MediaHelper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
@@ -108,8 +106,6 @@ class MessageController
         $messageClass = Factory::getItem($data['message_type']);
 
 //        $messageClass->addExtraFields($this->redis,$messageRedisKey,$data);
-
-        Helper::log(get_class($messageClass), 'CLASS'); # TODO remove;
 
         $responseData = $messageClass->returnResponseDataForCreateMessage($data, $messageRedisKey, $this->redis);
 

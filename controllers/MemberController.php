@@ -5,13 +5,11 @@ namespace Controllers;
 
 
 use Helpers\ChatHelper;
-use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
 use Illuminate\Database\Capsule\Manager;
 use Illuminate\Support\Str;
-use PHPUnit\TextUI\Help;
 use Redis;
 use Traits\RedisTrait;
 
@@ -295,7 +293,6 @@ class MemberController
     public function chatLeave(array $data)
     {
         $chatId = $data['chat_id'];
-
 
         $this->redis->zRem("chat:members:{$data['chat_id']}", $data['user_id']);
         $bannedTime = time();

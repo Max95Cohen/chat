@@ -4,7 +4,6 @@ namespace Controllers;
 
 use Carbon\Carbon;
 use Helpers\ChatHelper;
-use Helpers\Helper;
 use Helpers\MessageHelper;
 use Helpers\ResponseFormatHelper;
 use Helpers\UserHelper;
@@ -15,7 +14,6 @@ use Patterns\MessageStrategy\Classes\BannedStrategy;
 use Patterns\MessageStrategy\Classes\MysqlStrategy;
 use Patterns\MessageStrategy\Classes\RedisStrategy;
 use Patterns\MessageStrategy\Strategy;
-use PHPUnit\TextUI\Help;
 use Redis;
 use Traits\RedisTrait;
 
@@ -89,11 +87,7 @@ class ChatController
 
         $userChatIds = $this->redis->zRevRangeByScore("user:chats:{$data['user_id']}", '+inf', '-inf', ['limit' => [$startChat, $endChat]]);
 
-//        Helper::log($userChatIds, 'REDIS'); # TODO remove;
-
         $userChats = DB::table('chats')->whereIn('id', $userChatIds)->get();
-
-//        Helper::log($userChats, 'DB'); # TODO remove;
 
         // нужно для сортировки,
         $responseData = [];
@@ -105,7 +99,7 @@ class ChatController
             //@TODO тестовая фигня нужно проверить и исправить
             $lastMessageId = $lastMessageId[0] ?? null;
             $lastMessage = $lastMessageId ? $this->redis->hGetAll($lastMessageId) : [];
-            $lastMessageUserId = $lastMessage['user_id'] ?? 'null';
+            $lastMessageUserId = $lastMessage['user_id'] ?? null;
 
             if ($chat) {
                 $chatStartTime = $this->redis->zRange("chat:{$chatId}", 0, 0, true);

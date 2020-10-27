@@ -10,7 +10,7 @@ use Illuminate\Database\Capsule\Manager;
 
 $server = new swoole_websocket_server('0.0.0.0', 9502, SWOOLE_PROCESS, SWOOLE_SOCK_TCP | SWOOLE_SSL);
 
-$capsule = new Illuminate\Database\Capsule\Manager();
+$capsule = new Manager();
 
 require_once 'env.php';
 
@@ -37,8 +37,6 @@ $capsule->setAsGlobal();
 Carbon::setLocale('ru');
 
 $server->on('open', function ($server, $req) {
-    echo "OPEN {$req->fd}\n"; # TODO remove;
-
     return $req->fd;
 });
 
@@ -48,13 +46,9 @@ $server->on('message', function ($server, $frame) {
 
     $requestData = json_decode($frame->data, true);
 
-    Helper::log($requestData, 'REQUEST'); # TODO remove;
-
     $requestData['data']['server'] = $server;
 
     $responseData = RouterController::executeRoute($requestData['cmd'], $requestData['data'], $frame->fd);
-
-    Helper::log($responseData, 'RESPONSE'); # TODO remove;
 
     $notifyUsers = $responseData['notify_users'];
     $response = [];
@@ -79,8 +73,6 @@ $server->on('message', function ($server, $frame) {
 });
 
 $server->on('close', function ($server, $fd) {
-    echo "CLOSE {$fd}\n"; # TODO comment;
-
     $redis = new Redis();
     $redis->connect('127.0.0.1', 6379);
 
