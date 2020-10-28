@@ -25,7 +25,6 @@ $capsule->setAsGlobal();
 $fireBaseApiKey = 'AAAA_6w0iuk:APA91bGDY0dFB1r9AGneqacC-43AhO9zEo9h0FOmdt-bUutWr7PbLOXACRPnkcDrJxRkKKE0Dp65GsPtsIIvs-0is_x3S2EzCuh27aQGMNcLoyx-POhRazREjr0P0SdvBgKDF6plSzOI';
 $fireBaseUrl = 'https://fcm.googleapis.com/fcm/send';
 
-
 while (true) {
     $redis = new Redis();
 
